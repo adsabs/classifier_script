@@ -7,6 +7,7 @@ from urllib.parse import urlencode, quote_plus
 import pandas as pd
 
 from astrobert.finetuning_2_seq_classification import batch_assign_SciX_categories
+# from astrobert.finetuning_2_seq_classification import article_assign_SciX_categories
 from adsputils import setup_logging, load_config
 
 # import pdb;pdb.set_trace()
@@ -82,6 +83,7 @@ if __name__ == "__main__":
     # import pdb;pdb.set_trace()
 
     list_of_categories, list_of_scores = batch_assign_SciX_categories(list_of_texts=test_abs)
+    # list_of_categories, list_of_scores = article_assign_SciX_categories(list_of_texts=test_abs)
 
     # Category Score Order
     ['Astronomy', 'Heliophysics', 'Planetary Science', 'Earth Science', 'NASA-funded Biophysics', 'Other Physics', 'Other', 'Text Garbage']
