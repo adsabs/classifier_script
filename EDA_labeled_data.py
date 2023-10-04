@@ -5,7 +5,9 @@ import requests
 from urllib.parse import urlencode, quote_plus
 from time import perf_counter
 
+import matplotlib.pyplot as plt
 import pandas as pd
+import seaborn as sns
 
 from astrobert.finetuning_2_seq_classification import batch_assign_SciX_categories
 # from astrobert.finetuning_2_seq_classification import article_assign_SciX_categories
@@ -134,6 +136,10 @@ def relabel_categorical_categories(df, column='primaryClass'):
 
 if __name__ == "__main__":
 
+    #List of categories
+    categories = ['Astronomy', 'Heliophysics', 'Planetary Science', 'Earth Science', 'NASA-funded Biophysics', 'Other Physics', 'Other', 'Text Garbage']
+    short_categories = ['AST', 'Helio', 'Planetary', 'Earth', 'BPS', 'Other PHY', 'Other', 'Garbage']
+
 
     # Run sample classification or
     # Load previously generated and classified data
@@ -172,5 +178,31 @@ if __name__ == "__main__":
     # print(df_summary_secondary_class)
     # df_summary_classes = df_summary_classes[['primaryClass']]
 
+    ############################
+    # Plotting
+    ############################
+
+    # First lest plot the number of papers in each category
+    sns.barplot(x='primaryClass', y='counts', data=df_summary_primary_class)
+    # plt.show()
+
+    # Now lets loop through each category and create a boxplot of the scores
+    for index, cat in enumerate(categories):
+        short_cat = short_categories[index] 
+        df_cat = df[df['primaryClass'] == cat]
+        # Transform the current dataframe into a long form, whith one column for the score, one column for the new score, and one column for the category
+        df_cat_long = pd.melt(df_cat, id_vars=['primaryClass'], value_vars=[f'score {short_cat}', f'new score {short_cat}'])
+        dfs = df_cat_long[df_cat_long['variable'] == f'score {short_cat}']
+        dfns = df_cat_long[df_cat_long['variable'] == f'new score {short_cat}']
+        import pdb;pdb.set_trace()
+        # Create a boxplot of the scores as a function of category
+        sns.boxplot(x='primaryClass', y='value', hue='variable', data=dfs)
+        plt.show()
+        plt.close()
+        sns.boxplot(x='primaryClass', y='value', hue='variable', data=dfns)
+        # sns.boxplot(x='primaryClass', y=f'new score {short_cat}', data=df_cat)
+        plt.show()
+        plt.close()
+    
  
     import pdb;pdb.set_trace()
