@@ -185,6 +185,7 @@ if __name__ == "__main__":
     # First lest plot the number of papers in each category
     sns.barplot(x='primaryClass', y='counts', data=df_summary_primary_class)
     # plt.show()
+    # plt.close()
 
     # Now lets loop through each category and create a boxplot of the scores
     for index, cat in enumerate(categories):
