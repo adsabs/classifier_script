@@ -139,7 +139,13 @@ if __name__ == "__main__":
     #List of categories
     categories = ['Astronomy', 'Heliophysics', 'Planetary Science', 'Earth Science', 'NASA-funded Biophysics', 'Other Physics', 'Other', 'Text Garbage']
     short_categories = ['AST', 'Helio', 'Planetary', 'Earth', 'BPS', 'Other PHY', 'Other', 'Garbage']
+    # score_categories = ['score AST', 'score Helio', 'score Planet', 'score Earth', 'score Bio', 'score Phys', 'score Other', 'score Garbage']
+    # new_score_categories = ['new score AST', 'new score Helio', 'new score Planet', 'new score Earth', 'new score Bio', 'new score Phys', 'new score Other', 'new score Garbage']
 
+    # Use a list comprehension to create a list of the new score categories from the short categories
+    new_score_categories = [f'new score {cat}' for cat in short_categories]
+    # Now do the same for the score categories
+    score_categories = [f'score {cat}' for cat in short_categories]
 
     # Run sample classification or
     # Load previously generated and classified data
@@ -172,10 +178,10 @@ if __name__ == "__main__":
 
     # Create summary table that shows the number of papers in each category of primaryClass
     df_summary_primary_class = df.groupby('primaryClass').size().reset_index(name='counts')
-    # df_summary_secondary_class = df.groupby('secondaryClass').size().reset_index(name='counts')
+    df_summary_secondary_class = df.groupby('secondaryClass').size().reset_index(name='counts')
 
     print(df_summary_primary_class)
-    # print(df_summary_secondary_class)
+    print(df_summary_secondary_class)
     # df_summary_classes = df_summary_classes[['primaryClass']]
 
     ############################
@@ -184,17 +190,19 @@ if __name__ == "__main__":
 
     # First lest plot the number of papers in each category
     sns.barplot(x='primaryClass', y='counts', data=df_summary_primary_class)
-    # plt.show()
-    # plt.close()
+    plt.show()
+    plt.close()
 
     # Now lets loop through each category and create a boxplot of the scores
     for index, cat in enumerate(categories):
         short_cat = short_categories[index] 
         df_cat = df[df['primaryClass'] == cat]
+        # import pdb;pdb.set_trace()
         # Transform the current dataframe into a long form, whith one column for the score, one column for the new score, and one column for the category
-        df_cat_long = pd.melt(df_cat, id_vars=['primaryClass'], value_vars=[f'score {short_cat}', f'new score {short_cat}'])
-        dfs = df_cat_long[df_cat_long['variable'] == f'score {short_cat}']
-        dfns = df_cat_long[df_cat_long['variable'] == f'new score {short_cat}']
+        # df_cat_long = pd.melt(df_cat, id_vars=['primaryClass'], value_vars=[f'score {short_cat}', f'new score {short_cat}'])
+        df_cat_long = pd.melt(df_cat, id_vars=['bibcode'], value_vars=score_categories)
+        # dfs = df_cat_long[df_cat_long['variable'] == f'score {short_cat}']
+        # dfns = df_cat_long[df_cat_long['variable'] == f'new score {short_cat}']
         import pdb;pdb.set_trace()
         # Create a boxplot of the scores as a function of category
         sns.boxplot(x='primaryClass', y='value', hue='variable', data=dfs)
