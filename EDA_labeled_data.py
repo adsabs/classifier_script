@@ -202,49 +202,56 @@ if __name__ == "__main__":
         sns.barplot(x='primaryClass', y='counts', data=df_summary_primary_class)
         plt.show()
         plt.close()
+        plt.clf()
 
     # import pdb;pdb.set_trace()
     # Now lets loop through each category and create a boxplot of the scores
-    for index, cat in enumerate(categories):
-        short_cat = short_categories[index] 
-        df_cat = df[df['primaryClass'] == cat]
-        df_cat = df_cat[keep_categories]
-        # df_cat = df_cat[keep_categories]
-        # import pdb;pdb.set_trace()
-        # Transform the current dataframe into a long form, whith one column for the score, one column for the new score, and one column for the category
-        # df_cat_long = pd.melt(df_cat, id_vars=['primaryClass'], value_vars=[f'score {short_cat}', f'new score {short_cat}'])
-        df_cat_long1 = pd.melt(df_cat, id_vars=['bibcode'], value_vars=keep_categories1)
-        df_cat_long2 = pd.melt(df_cat, id_vars=['bibcode'], value_vars=keep_categories2)
-        # stack the two dataframes
-        # df_cat_long = pd.concat([df_cat_long1, df_cat_long2])
-        df_cat_long = df_cat_long1.append(df_cat_long2)
-        dfs = df_cat_long[df_cat_long['variable'] == f'score {short_cat}']
-        dfns = df_cat_long[df_cat_long['variable'] == f'new score {short_cat}']
-        # import pdb;pdb.set_trace()
+    if config_dict['SHOW_CATEGORY_BOXPLOTS']:
 
-        xs = 14
-        ys = 8
+        for index, cat in enumerate(categories):
+            print()
+            print("Beginning category: ", cat)
+            short_cat = short_categories[index] 
+            df_cat = df[df['primaryClass'] == cat]
+            df_cat = df_cat[keep_categories]
 
-        fig, ax = plt.subplots(figsize=(xs, ys))
-        plot_box_score = sns.boxplot(x='variable', y='value', data=df_cat_long1,ax=ax)
-        plot_box_score.set(title=f'Boxplot of scores for articles classifid as {short_cat}')
-        plt.show()
-        plt.close()
+            # if there are no papers in the category, skip it
+            if len(df_cat) == 0:
+                print(f'No papers in category {cat}')
+                continue
 
-        fig, ax = plt.subplots(figsize=(xs, ys))
-        plot_box_newscore = sns.boxplot(x='variable', y='value', data=df_cat_long2,ax=ax)
-        plot_box_newscore.set(title=f'Boxplot of new scores for articles classified as {short_cat}')
-        plt.show()
-        plt.close()
-        # Create a boxplot of the scores as a function of category
-        # sns.boxplot(x='primaryClass', y='value', hue='variable', data=dfs)
-        # plt.show()
-        # plt.close()
-        # sns.boxplot(x='primaryClass', y='value', hue='variable', data=dfns)
-        # sns.boxplot(x='primaryClass', y=f'new score {short_cat}', data=df_cat)
-        # plt.show()
-        # plt.close()
-        print("Finished with article category: ", cat)
-    
+            # df_cat = df_cat[keep_categories]
+            # import pdb;pdb.set_trace()
+            # Transform the current dataframe into a long form, whith one column for the score, one column for the new score, and one column for the category
+            # df_cat_long = pd.melt(df_cat, id_vars=['primaryClass'], value_vars=[f'score {short_cat}', f'new score {short_cat}'])
+            df_cat_long1 = pd.melt(df_cat, id_vars=['bibcode'], value_vars=keep_categories1)
+            df_cat_long2 = pd.melt(df_cat, id_vars=['bibcode'], value_vars=keep_categories2)
+            # stack the two dataframes
+            # df_cat_long = pd.concat([df_cat_long1, df_cat_long2])
+            df_cat_long = df_cat_long1.append(df_cat_long2)
+            df_cat_long = pd.concat([df_cat_long1, df_cat_long2], ignore_index=True, axis=0)
+            dfs = df_cat_long[df_cat_long['variable'] == f'score {short_cat}']
+            dfns = df_cat_long[df_cat_long['variable'] == f'new score {short_cat}']
+            import pdb;pdb.set_trace()
+
+            xs = 14
+            ys = 8
+
+            fig, ax = plt.subplots(figsize=(xs, ys))
+            plot_box_score = sns.boxplot(x='variable', y='value', data=df_cat_long1,ax=ax)
+            plot_box_score.set(title=f'Boxplot of scores for articles classified as {short_cat}')
+            plt.show()
+            plt.close()
+            plt.clf()
+
+            fig, ax = plt.subplots(figsize=(xs, ys))
+            plot_box_newscore = sns.boxplot(x='variable', y='value', data=df_cat_long2,ax=ax)
+            plot_box_newscore.set(title=f'Boxplot of new scores for articles classified as {short_cat}')
+            plt.show()
+            plt.close()
+            plt.clf()
+
+            print("Finished with category: ", cat)
+        
  
     import pdb;pdb.set_trace()
