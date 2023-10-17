@@ -9,3 +9,6 @@ DATA_SAMPLE_CLASSIFIED_NEW = '/Users/thomasallen/Code/SciX_Classifier/data/groun
 # Classification Parameters
 RUN_SAMPLE_CLASSIFICATION = "no" # "yes", "no"
 CLASSIFICATION_INPUT_TEXT = 'Title' # 'Title', 'Abstract', 'Body'
+# Plots
+SHOW_BARCHART_COUNTS_ALL = False
+SHOW_CATEGORY_BOXPLOTS = True
