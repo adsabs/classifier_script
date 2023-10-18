@@ -3,7 +3,7 @@ import sys
 import json
 import requests
 from urllib.parse import urlencode, quote_plus
-from time import perf_counter
+from time import perf_counter, time
 import argparse
 
 import matplotlib.pyplot as plt
@@ -18,26 +18,42 @@ from adsputils import setup_logging, load_config
 
 config_dict = load_config(proj_home=os.path.realpath(os.path.join(os.path.dirname(__file__))))#, '.')
  
-def parse_inputs():
-    '''Parse and error check input for nearest_buildings function'''
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--config_file', required=True,\
-                        help='Path to config file')
-    args = parser.parse_args()
-    args_dict = vars(args)
+# def parse_inputs():
+#     '''Parse and error check input for nearest_buildings function'''
+#     parser = argparse.ArgumentParser()
+#     parser.add_argument('--config_file', required=True,\
+#                         help='Path to config file')
+#     args = parser.parse_args()
+#     args_dict = vars(args)
 
     # Check inputs
 
     # Check Tables
-    try:
-        config_dict = load_config(args_dict['config_file'])
-    except:
-        print('Loading default config file')
-        config_dict = load_config(proj_home=os.path.realpath(os.path.join(os.path.dirname(__file__))))#, '.')
+    # try:
+    #     config_dict = load_config(args_dict['config_file'])
+    # except:
+    #     print('Loading default config file')
+    #     config_dict = load_config(proj_home=os.path.realpath(os.path.join(os.path.dirname(__file__))))#, '.')
+
+    # return args_dict
 
 
+# args_dict = parse_inputs()
 
-import pdb;pdb.set_trace()
+# Now save the config dict to the following
+def save_config_dict(config_dict):
+    """Save config dict to json file"""
+
+    config_dict['API_TOKEN'] = ''
+    config_filename = f'config.{time()}.json'
+
+    output_file = os.path.join(config_dict['CONFIG_DIR'], config_filename) 
+
+    with open(output_file, 'w') as f:
+        json.dump(config_dict, f, indent=4)
+
+save_config_dict(config_dict)
+# import pdb;pdb.set_trace()
 
 def classify_sample(return_df=False):
     """Classify a sample of text for comparison with ground truth"""
@@ -90,7 +106,11 @@ def classify_sample(return_df=False):
         if pd.isnull(abstract):
             abstract = ''
 
-        text = title + ' ' + str(abstract)
+        # Check CLASSIFICATION_INPUT_TEXT for input text
+        if config_dict['CLASSIFICATION_INPUT_TEXT'] == 'title':
+            text = title
+        elif config_dict['CLASSIFICATION_INPUT_TEXT'] == 'abstract':
+            text = title + ' ' + str(abstract)
 
         # Assign categories
         tmp_categories, tmp_scores = batch_assign_SciX_categories(list_of_texts=[text])
@@ -189,7 +209,7 @@ if __name__ == "__main__":
         df = pd.read_csv(config_dict['DATA_SAMPLE_CLASSIFIED_NEW'])
 
 
-    # import pdb;pdb.set_trace()
+    import pdb;pdb.set_trace()
     # rename categories in df column 'primaryClass'
     df = relabel_categorical_categories(df, column='primaryClass')
     try:
