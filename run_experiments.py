@@ -206,7 +206,8 @@ if __name__ == "__main__":
         print(f'Elapsed time: {elapsed_time} seconds')
     elif config_dict['RUN_SAMPLE_CLASSIFICATION'] == 'no':
         # Do not run sample classification
-        df = pd.read_csv(config_dict['DATA_SAMPLE_CLASSIFIED_NEW'])
+        df = pd.read_csv(config_dict['DATA_SAMPLE_CLASSIFIED'])
+        # df = pd.read_csv(config_dict['DATA_SAMPLE_CLASSIFIED_NEW'])
 
 
     import pdb;pdb.set_trace()

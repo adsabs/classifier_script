@@ -7,7 +7,8 @@ CONFIG_DIR = '/Users/thomasallen/Code/SciX_Classifier/config_files/'
 DATA_FULL_SAMPLE = '/Users/thomasallen/Code/SciX_Classifier/data/full_sample.csv'
 DATA_GROUND_TRUTH = '/Users/thomasallen/Code/SciX_Classifier/data/ground_truth.csv'
 TEST_DATA_SOURCE = "Classified_CSV" # "Article', 'Classified_CSV'
-DATA_SAMPLE_CLASSIFIED_NEW = '/Users/thomasallen/Code/SciX_Classifier/data/ground_truth_sample_classified_new.csv'
+DATA_SAMPLE_CLASSIFIED = '/Users/thomasallen/Code/SciX_Classifier/data/ground_truth_sample_classified.csv' # Initial classified sample
+DATA_SAMPLE_CLASSIFIED_NEW = '/Users/thomasallen/Code/SciX_Classifier/data/ground_truth_sample_classified_new.csv' # Latest classified sample
 # Classification Parameters
 RUN_SAMPLE_CLASSIFICATION = "yes" # "yes", "no"
 CLASSIFICATION_INPUT_TEXT = 'Abstract' # 'Title', 'Abstract', 'Body'
