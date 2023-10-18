@@ -107,10 +107,12 @@ def classify_sample(return_df=False):
             abstract = ''
 
         # Check CLASSIFICATION_INPUT_TEXT for input text
-        if config_dict['CLASSIFICATION_INPUT_TEXT'] == 'title':
+        if config_dict['CLASSIFICATION_INPUT_TEXT'] == 'Title':
             text = title
-        elif config_dict['CLASSIFICATION_INPUT_TEXT'] == 'abstract':
+        elif config_dict['CLASSIFICATION_INPUT_TEXT'] == 'Abstract':
             text = title + ' ' + str(abstract)
+
+        # import pdb;pdb.set_trace()
 
         # Assign categories
         tmp_categories, tmp_scores = batch_assign_SciX_categories(list_of_texts=[text])
