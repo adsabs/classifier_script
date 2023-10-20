@@ -10,11 +10,12 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 
-from astrobert.finetuning_2_seq_classification import batch_assign_SciX_categories
+from batch_assign_SciX_categories import batch_assign_SciX_categories
+# from astrobert.finetuning_2_seq_classification import batch_assign_SciX_categories
 # from astrobert.finetuning_2_seq_classification import article_assign_SciX_categories
 from adsputils import setup_logging, load_config
 
-# import pdb;pdb.set_trace()
+import pdb;pdb.set_trace()
 
 config_dict = load_config(proj_home=os.path.realpath(os.path.join(os.path.dirname(__file__))))#, '.')
  
