@@ -107,19 +107,28 @@ def classify_sample(return_df=False):
             abstract = ''
 
         # Check CLASSIFICATION_INPUT_TEXT for input text
-        if config_dict['CLASSIFICATION_INPUT_TEXT'] == 'Title':
+        if config_dict['CLASSIFICATION_INPUT_TEXT'] == 'title':
             text = title
-        elif config_dict['CLASSIFICATION_INPUT_TEXT'] == 'Abstract':
+        elif config_dict['CLASSIFICATION_INPUT_TEXT'] == 'abstract':
             text = title + ' ' + str(abstract)
+
+        print(f'Text: {text}')
 
         # import pdb;pdb.set_trace()
 
+        # CLASSIFICATION_PRETRAINED_MODEL = 'adsabs/astroBERT'
+        # CLASSIFICATION_PRETRAINED_MODEL_REVISION = 'SciX-Categorizer'
         # Assign categories
-        tmp_categories, tmp_scores = batch_assign_SciX_categories(list_of_texts=[text])
+        tmp_categories, tmp_scores = batch_assign_SciX_categories(list_of_texts=[text],
+                    pretrained_model_name_or_path=config_dict['CLASSIFICATION_PRETRAINED_MODEL'],
+                    revision=config_dict['CLASSIFICATION_PRETRAINED_MODEL_REVISION'])
+
+        # import pdb;pdb.set_trace()
         tmp_categories = tmp_categories[0]
         tmp_scores = tmp_scores[0]
         print(tmp_categories)
         print(tmp_scores)
+        # import pdb;pdb.set_trace()
 
         # Append to lists
         list_of_categories.append(tmp_categories)
@@ -139,10 +148,10 @@ def classify_sample(return_df=False):
                 'score': list_of_scores,
                 'new score AST': list_of_AST,
                 'new score Helio': list_of_Helio,
-                'new score Planet': list_of_Planet,
+                'new score Planetary': list_of_Planet,
                 'new score Earth': list_of_Earth,
-                'new score Bio': list_of_Bio,
-                'new score Phys': list_of_Phys,
+                'new score BPS': list_of_Bio,
+                'new score Other PHY': list_of_Phys,
                 'new score Other': list_of_Other,
                 'new score Garbage': list_of_Garbage
                 }
@@ -177,6 +186,78 @@ def relabel_categorical_categories(df, column='primaryClass'):
 
     return df
 
+def plot_boxplot_category(df, cat, categories, short_categories, index,new_scores=True, column='primaryClass',show_plot=False):
+    """Plot boxplot of scores for each category"""
+
+    # categories = ['Astronomy', 'Heliophysics', 'Planetary Science', 'Earth Science', 'NASA-funded Biophysics', 'Other Physics', 'Other', 'Text Garbage']
+    # short_categories = ['AST', 'Helio', 'Planetary', 'Earth', 'BPS', 'Other PHY', 'Other', 'Text Garbage']
+    print()
+    print("Beginning category: ", cat)
+    # import pdb;pdb.set_trace()
+
+    print(f"Score Data from {config_dict['DATA_SAMPLE_CLASSIFIED_NEW']}")
+
+    # Use a list comprehension to create a list of the new score categories from the short categories
+    new_score_categories = [f'new score {cat}' for cat in short_categories]
+    # Now do the same for the score categories
+    score_categories = [f'score {cat}' for cat in short_categories]
+    # keep_categories = ['bibcode'] + score_categories + new_score_categories
+    if new_scores:
+        keep_categories = ['bibcode'] + new_score_categories
+    else:
+        keep_categories = ['bibcode'] + score_categories
+
+    short_cat = short_categories[index] 
+    # import pdb;pdb.set_trace()
+    df_cat = df[df[column] == cat]
+    df_cat = df_cat[keep_categories]
+
+    # if there are no papers in the category, skip it
+    if len(df_cat) == 0:
+        print(f'No papers in category {cat}')
+        return None
+
+    # df_cat = df_cat[keep_categories]
+    # import pdb;pdb.set_trace()
+    # Transform the current dataframe into a long form, whith one column for the score, one column for the new score, and one column for the category
+    # df_cat_long = pd.melt(df_cat, id_vars=['primaryClass'], value_vars=[f'score {short_cat}', f'new score {short_cat}'])
+    df_cat_long = pd.melt(df_cat, id_vars=['bibcode'], value_vars=keep_categories)
+    # stack the two dataframes
+    # df_cat_long = pd.concat([df_cat_long1, df_cat_long2])
+    # dfns = df_cat_long[df_cat_long['variable'] == f'new score {short_cat}']
+    # import pdb;pdb.set_trace()
+
+    pretrained_model = config_dict['CLASSIFICATION_PRETRAINED_MODEL']
+    pretrained_model = pretrained_model.replace('/', '_')
+
+    xs = 14
+    ys = 8
+
+    fig, ax = plt.subplots(figsize=(xs, ys))
+    plot_box_score = sns.boxplot(x='variable', y='value', data=df_cat_long,ax=ax)
+    plot_box_score.set(title=f"Boxplot of scores for articles classified as {cat}\n{config_dict['CLASSIFICATION_INPUT_TEXT']}\n{config_dict['CLASSIFICATION_PRETRAINED_MODEL']} - {config_dict['CLASSIFICATION_PRETRAINED_MODEL_REVISION']}\n{column}")
+    plot_filepath = f'{config_dict["BOXPLOT_SAVE_DIR"]}boxplot_scores_{cat}_{column}_{config_dict["CLASSIFICATION_INPUT_TEXT"]}_{pretrained_model}_{config_dict["CLASSIFICATION_PRETRAINED_MODEL_REVISION"]}.png'
+    # import pdb;pdb.set_trace()
+    plt.savefig(plot_filepath)
+    if show_plot:
+        plt.show()
+    plt.close()
+    plt.clf()
+
+# CLASSIFICATION_INPUT_TEXT = 'abstract' # 'title', 'abstract', 'body'
+# CLASSIFICATION_PRETRAINED_MODEL = 'adsabs/astroBERT'
+# CLASSIFICATION_PRETRAINED_MODEL_REVISION = 'SciX-Categorizer'
+# Plots
+    # fig, ax = plt.subplots(figsize=(xs, ys))
+    # plot_box_newscore = sns.boxplot(x='variable', y='value', data=df_cat_long2,ax=ax)
+    # plot_box_newscore.set(title=f'Boxplot of new scores for articles classified as {short_cat}')
+    # plt.show()
+    # plt.close()
+    # plt.clf()
+
+    print("Finished with category: ", cat)
+
+
 if __name__ == "__main__":
 
     #List of categories
@@ -208,11 +289,11 @@ if __name__ == "__main__":
         print(f'Elapsed time: {elapsed_time} seconds')
     elif config_dict['RUN_SAMPLE_CLASSIFICATION'] == 'no':
         # Do not run sample classification
-        df = pd.read_csv(config_dict['DATA_SAMPLE_CLASSIFIED'])
-        # df = pd.read_csv(config_dict['DATA_SAMPLE_CLASSIFIED_NEW'])
+        # df = pd.read_csv(config_dict['DATA_SAMPLE_CLASSIFIED'])
+        df = pd.read_csv(config_dict['DATA_SAMPLE_CLASSIFIED_NEW'])
 
 
-    import pdb;pdb.set_trace()
+    # import pdb;pdb.set_trace()
     # rename categories in df column 'primaryClass'
     df = relabel_categorical_categories(df, column='primaryClass')
     try:
@@ -250,52 +331,13 @@ if __name__ == "__main__":
 
     # import pdb;pdb.set_trace()
     # Now lets loop through each category and create a boxplot of the scores
-    if config_dict['SHOW_CATEGORY_BOXPLOTS']:
+    if config_dict['MAKE_CATEGORY_BOXPLOTS']:
 
         for index, cat in enumerate(categories):
-            print()
-            print("Beginning category: ", cat)
-            short_cat = short_categories[index] 
-            df_cat = df[df['primaryClass'] == cat]
-            df_cat = df_cat[keep_categories]
 
-            # if there are no papers in the category, skip it
-            if len(df_cat) == 0:
-                print(f'No papers in category {cat}')
-                continue
-
-            # df_cat = df_cat[keep_categories]
-            # import pdb;pdb.set_trace()
-            # Transform the current dataframe into a long form, whith one column for the score, one column for the new score, and one column for the category
-            # df_cat_long = pd.melt(df_cat, id_vars=['primaryClass'], value_vars=[f'score {short_cat}', f'new score {short_cat}'])
-            df_cat_long1 = pd.melt(df_cat, id_vars=['bibcode'], value_vars=keep_categories1)
-            df_cat_long2 = pd.melt(df_cat, id_vars=['bibcode'], value_vars=keep_categories2)
-            # stack the two dataframes
-            # df_cat_long = pd.concat([df_cat_long1, df_cat_long2])
-            df_cat_long = df_cat_long1.append(df_cat_long2)
-            df_cat_long = pd.concat([df_cat_long1, df_cat_long2], ignore_index=True, axis=0)
-            dfs = df_cat_long[df_cat_long['variable'] == f'score {short_cat}']
-            dfns = df_cat_long[df_cat_long['variable'] == f'new score {short_cat}']
-            import pdb;pdb.set_trace()
-
-            xs = 14
-            ys = 8
-
-            fig, ax = plt.subplots(figsize=(xs, ys))
-            plot_box_score = sns.boxplot(x='variable', y='value', data=df_cat_long1,ax=ax)
-            plot_box_score.set(title=f'Boxplot of scores for articles classified as {short_cat}')
-            plt.show()
-            plt.close()
-            plt.clf()
-
-            fig, ax = plt.subplots(figsize=(xs, ys))
-            plot_box_newscore = sns.boxplot(x='variable', y='value', data=df_cat_long2,ax=ax)
-            plot_box_newscore.set(title=f'Boxplot of new scores for articles classified as {short_cat}')
-            plt.show()
-            plt.close()
-            plt.clf()
-
-            print("Finished with category: ", cat)
+            plot_boxplot_category(df, cat, categories, short_categories, index,new_scores=True, column='primaryClass',show_plot=config_dict['SHOW_CATEGORY_BOXPLOTS'])
+            plot_boxplot_category(df, cat, categories, short_categories, index,new_scores=True, column='secondaryClass',show_plot=config_dict['SHOW_CATEGORY_BOXPLOTS'])
+            # plot_boxplot_category(df, cat, short_categories, keep_categories, index, column='primaryClass')
         
  
-    import pdb;pdb.set_trace()
+    # import pdb;pdb.set_trace()
