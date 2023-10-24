@@ -15,7 +15,7 @@ from batch_assign_SciX_categories import batch_assign_SciX_categories
 # from astrobert.finetuning_2_seq_classification import article_assign_SciX_categories
 from adsputils import setup_logging, load_config
 
-import pdb;pdb.set_trace()
+# import pdb;pdb.set_trace()
 
 config_dict = load_config(proj_home=os.path.realpath(os.path.join(os.path.dirname(__file__))))#, '.')
  
@@ -93,6 +93,30 @@ def classify_sample(return_df=False):
     list_of_Other = []
     list_of_Garbage = []
 
+    # Want to load the tokenizer and model once
+    # tokenizer = AutoTokenizer.from_pretrained(config_dict['CLASSIFICATION_PRETRAINED_MODEL'])
+    # model = AutoModelForSequenceClassification.from_pretrained(config_dict['CLASSIFICATION_PRETRAINED_MODEL'])
+
+    
+    # tokenize the text
+    tokenizer = AutoTokenizer.from_pretrained(pretrained_model_name_or_path=config_dict['CLASSIFICATION_PRETRAINED_MODEL'],
+                                              revision=config_dict['CLASSIFICATION_PRETRAINED_MODEL_REVISION'],
+                                              do_lower_case=False)
+    
+    # load model
+    labels = ['Astronomy', 'Heliophysics', 'Planetary Science', 'Earth Science', 'NASA-funded Biophysics', 'Other Physics', 'Other', 'Text Garbage']
+    id2label = {i:c for i,c in enumerate(labels) }
+    label2id = {v:k for k,v in id2label.items()}
+    model = AutoModelForSequenceClassification.from_pretrained(pretrained_model_name_or_path=config_dict['CLASSIFICATION_PRETRAINED_MODEL'],
+                                                               revision=config_dict['CLASSIFICATION_PRETRAINED_MODEL_REVISION'],
+                                                               num_labels=len(labels),
+                                                               problem_type='multi_label_classification',
+                                                               id2label=id2label,
+                                                               label2id=label2id
+                                                              )
+    
+
+
     # EnumeratedlLoop through each sample and assign categories
     # for bib, text in zip(test_bibs, test_text):
     for index, (bib, title, abstract) in enumerate(zip(test_bibs, test_title, test_abstract)):
@@ -120,9 +144,7 @@ def classify_sample(return_df=False):
         # CLASSIFICATION_PRETRAINED_MODEL = 'adsabs/astroBERT'
         # CLASSIFICATION_PRETRAINED_MODEL_REVISION = 'SciX-Categorizer'
         # Assign categories
-        tmp_categories, tmp_scores = batch_assign_SciX_categories(list_of_texts=[text],
-                    pretrained_model_name_or_path=config_dict['CLASSIFICATION_PRETRAINED_MODEL'],
-                    revision=config_dict['CLASSIFICATION_PRETRAINED_MODEL_REVISION'])
+        tmp_categories, tmp_scores = batch_assign_SciX_categories([text],tokenizer,model)
 
         # import pdb;pdb.set_trace()
         tmp_categories = tmp_categories[0]
