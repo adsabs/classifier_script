@@ -7,8 +7,10 @@ from time import perf_counter, time
 import argparse
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import seaborn as sns
+from sklearn.metrics import fbeta_score, precision_score, recall_score, precision_recall_fscore_support
 
 from batch_assign_SciX_categories import batch_assign_SciX_categories
 # from astrobert.finetuning_2_seq_classification import batch_assign_SciX_categories
@@ -209,6 +211,11 @@ def relabel_categorical_categories(df, column='primaryClass'):
 
     return df
 
+def short2conomical(df, column='primaryClass'):
+    """Rename categories in selected column of dataframe"""
+
+    mapping = {'BPS':'', 'FALSE': 'Other', 'False': 'Other'}
+
 def plot_boxplot_category(df, cat, categories, short_categories, index,new_scores=True, column='primaryClass',show_plot=False):
     """Plot boxplot of scores for each category"""
 
@@ -280,6 +287,57 @@ def plot_boxplot_category(df, cat, categories, short_categories, index,new_score
 
     print("Finished with category: ", cat)
 
+def calculate_precision(ground_truth, model_predictions):
+    """Calculate the precision for a given category
+
+    Parameters
+    ----------
+    ground_truth : list
+
+    model_predictions : list
+
+    Returns
+    -------
+    precision : float
+    """
+
+    pass
+
+def calculate_recall(ground_truth, model_predictions):
+    """Calculate the recall for a given category
+
+    Parameters
+    ----------
+    ground_truth : list
+
+    model_predictions : list
+
+    Returns
+    -------
+    recall : float
+    """
+
+    pass
+
+def calculate_f_beta_score(ground_truth, model_predictions, beta=1):
+    """Calculate the f_beta score for a given category
+
+    Parameters
+    ----------
+    ground_truth : list
+
+    model_predictions : list
+
+    beta : float
+
+    Returns
+    -------
+    f_beta_score : float
+    """
+
+    pass
+
+
 
 if __name__ == "__main__":
 
@@ -341,6 +399,33 @@ if __name__ == "__main__":
     print(df_summary_secondary_class)
     # df_summary_classes = df_summary_classes[['primaryClass']]
 
+    # Create a new column in df called 'primaryCategory' that takes the first element from the list contained in the column 'category'
+    df['category'] = df['category'].apply(eval)
+    # change any emptly lists in the column 'category' to ['Other']
+    df['category'] = df['category'].apply(lambda x: ['Other'] if len(x) == 0 else x)
+    # import pdb;pdb.set_trace()
+    df['primaryCategory'] = df['category'].apply(lambda x: x[0])
+    # import pdb;pdb.set_trace()
+
+    # Now calculate the precision, recall, and f_beta score for each category
+
+    metrics_micro_f1 = precision_recall_fscore_support(df['primaryClass'],
+                                              df['primaryCategory'],
+                                              average='micro',
+                                              beta = 1.0,
+                                              labels=categories,
+                                              zero_division=np.nan)
+
+    metrics_by_class = precision_recall_fscore_support(df['primaryClass'],
+                                              df['primaryCategory'],
+                                              average=None,
+                                              beta = 1.0,
+                                              labels=categories,
+                                              zero_division=np.nan)
+
+    print('Metrics micro F1: ', metrics_micro_f1)
+    print('Metrics: ', metrics_by_class)
+
     ############################
     # Plotting
     ############################
@@ -363,4 +448,29 @@ if __name__ == "__main__":
             # plot_boxplot_category(df, cat, short_categories, keep_categories, index, column='primaryClass')
         
  
-    # import pdb;pdb.set_trace()
+    metrics2 = fbeta_score(df['primaryClass'],
+                           df['primaryCategory'],
+                           beta=1.0,
+                           average=None,
+                           labels=categories,
+                           zero_division=np.nan)
+
+    # let beta range from 0 to 1 in 0.1 increments
+    # beta_range = np.arange(0.5, 2.2, 0.25)
+    beta_range = np.array([0.5, 1.0, 2.0])
+
+    for index, beta in enumerate(beta_range):
+        metrics_beta = fbeta_score(df['primaryClass'],
+                                   df['primaryCategory'],
+                                   beta=beta,
+                                   average=None,
+                                   labels=categories,
+                                   zero_division=np.nan)
+
+        print()
+        print(f'beta: {beta}')
+        print(metrics_beta)
+        for i, cat in enumerate(categories):
+            print(f'{cat}: {metrics_beta[i]:.2f}')
+
+    import pdb;pdb.set_trace()
