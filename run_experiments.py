@@ -12,6 +12,8 @@ import pandas as pd
 import seaborn as sns
 from sklearn.metrics import fbeta_score, precision_score, recall_score, precision_recall_fscore_support
 
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
+
 from batch_assign_SciX_categories import batch_assign_SciX_categories
 # from astrobert.finetuning_2_seq_classification import batch_assign_SciX_categories
 # from astrobert.finetuning_2_seq_classification import article_assign_SciX_categories
@@ -62,13 +64,29 @@ def classify_sample(return_df=False):
     """Classify a sample of text for comparison with ground truth"""
 
     # Previously generated and classified data
-    df_full = pd.read_csv(config_dict['DATA_FULL_SAMPLE'])
-    df_truth = pd.read_csv(config_dict['DATA_GROUND_TRUTH'])
+    # df_full = pd.read_csv(config_dict['DATA_FULL_SAMPLE'])
+    # df_truth = pd.read_csv(config_dict['DATA_GROUND_TRUTH'])
+    # df_truth = pd.read_csv(config_dict['DATA_GROUND_TRUTH_ALL'])
+    df_in = pd.read_csv(config_dict['DATA_GROUND_TRUTH_ALL'])
     # remove the 'title' and 'abstract' columns from df_truth
-    df_truth = df_truth.drop(columns=['title', 'abstract'])
+    # df_truth = df_truth.drop(columns=['title', 'abstract'])
+
+    # Open pickle file
+    # df_full = pd.read_pickle(config_dict['DATA_FULL_SAMPLE'])
+    # df_in = pd.read_pickle(config_dict['DATA_GROUND_TRUTH_ALL_PICKLE'])
+
+    # Open JSON file
+    # df_in = pd.read_json(config_dict['DATA_GROUND_TRUTH_ALL_JSON'])
+
+    # Read JSON file into a dictionary
+    # with open(config_dict['DATA_GROUND_TRUTH_ALL_JSON']) as f:
+    #     data = json.load(f)
+
+    # Now convert the dictionary to a dataframe
+    # df_in = pd.DataFrame.from_dict(data)
     
     # import pdb;pdb.set_trace()
-    df_in = df_truth.merge(df_full, on='bibcode', how='left')
+    # df_in = df_truth.merge(df_full, on='bibcode', how='left')
     # 3 for intital test
     # nn = 3
     # test_bibs = list(df_in['bibcode'].values[:nn])
@@ -77,6 +95,7 @@ def classify_sample(return_df=False):
     test_bibs = list(df_in['bibcode'].values[:])
     test_abstract = list(df_in['abstract'].values[:])
     test_title = list(df_in['title'].values[:])
+    # test_title = [title for title in test_title]
     # import pdb;pdb.set_trace()
 
     # Ordered list of Categories
@@ -110,14 +129,17 @@ def classify_sample(return_df=False):
     id2label = {i:c for i,c in enumerate(labels) }
     label2id = {v:k for k,v in id2label.items()}
     model = AutoModelForSequenceClassification.from_pretrained(pretrained_model_name_or_path=config_dict['CLASSIFICATION_PRETRAINED_MODEL'],
-                                                               revision=config_dict['CLASSIFICATION_PRETRAINED_MODEL_REVISION'],
-                                                               num_labels=len(labels),
-                                                               problem_type='multi_label_classification',
-                                                               id2label=id2label,
-                                                               label2id=label2id
-                                                              )
+                                    revision=config_dict['CLASSIFICATION_PRETRAINED_MODEL_REVISION'],
+                                    num_labels=len(labels),
+                                    problem_type='multi_label_classification',
+                                    id2label=id2label,
+                                    label2id=label2id
+                                    )
     
 
+    print('Tokenizer and model loaded')
+    print(tokenizer)
+    print(model)
 
     # EnumeratedlLoop through each sample and assign categories
     # for bib, text in zip(test_bibs, test_text):
@@ -128,16 +150,27 @@ def classify_sample(return_df=False):
         print(f'Title: {title}')
         print(f'Abstract: {abstract}')
         # print(text)
+        # import pdb;pdb.set_trace()
 
         #check if abstract is nan
         if pd.isnull(abstract):
             abstract = ''
 
         # Check CLASSIFICATION_INPUT_TEXT for input text
-        if config_dict['CLASSIFICATION_INPUT_TEXT'] == 'title':
-            text = title
-        elif config_dict['CLASSIFICATION_INPUT_TEXT'] == 'abstract':
-            text = title + ' ' + str(abstract)
+        if config_dict['TEST_LABELS']:
+            if config_dict['CLASSIFICATION_INPUT_TEXT'] == 'title':
+                text = f"Title: {str(title)}"
+            elif config_dict['CLASSIFICATION_INPUT_TEXT'] == 'abstract':
+                text = f"Abstract: {str(abstract)}"
+            elif config_dict['CLASSIFICATION_INPUT_TEXT'] == 'title abstract':
+                text = f"Title: {str(title)} \nAbstract: {str(abstract)}"
+        else:
+            if config_dict['CLASSIFICATION_INPUT_TEXT'] == 'title':
+                text = f"{str(title)}"
+            elif config_dict['CLASSIFICATION_INPUT_TEXT'] == 'abstract':
+                text = f"{str(abstract)}"
+            elif config_dict['CLASSIFICATION_INPUT_TEXT'] == 'title abstract':
+                text = f"{str(title)} {str(abstract)}"
 
         print(f'Text: {text}')
 
@@ -146,7 +179,7 @@ def classify_sample(return_df=False):
         # CLASSIFICATION_PRETRAINED_MODEL = 'adsabs/astroBERT'
         # CLASSIFICATION_PRETRAINED_MODEL_REVISION = 'SciX-Categorizer'
         # Assign categories
-        tmp_categories, tmp_scores = batch_assign_SciX_categories([text],tokenizer,model)
+        tmp_categories, tmp_scores = batch_assign_SciX_categories([text],tokenizer,model,labels,id2label,label2id)
 
         # import pdb;pdb.set_trace()
         tmp_categories = tmp_categories[0]
@@ -197,7 +230,7 @@ def relabel_categorical_categories(df, column='primaryClass'):
     """Rename categories in selected column of dataframe"""
 
     # import pdb;pdb.set_trace()
-    mapping = {'Biology': 'BPS', 'FALSE': 'Other'}#, 'False': 'Other'}
+    mapping = {'Biology': 'NASA-funded Biophysics', 'FALSE': 'Other'}#, 'False': 'Other'}
     # mapping = {'Biology': 'BPS', 'FALSE': 'Other', 'False': 'Other'}
 
     # if there are NaNs in the column, replace them with 'FALSE'j                                       
@@ -211,7 +244,7 @@ def relabel_categorical_categories(df, column='primaryClass'):
 
     return df
 
-def short2conomical(df, column='primaryClass'):
+def short2cononical(df, column='primaryClass'):
     """Rename categories in selected column of dataframe"""
 
     mapping = {'BPS':'', 'FALSE': 'Other', 'False': 'Other'}
@@ -266,7 +299,8 @@ def plot_boxplot_category(df, cat, categories, short_categories, index,new_score
     fig, ax = plt.subplots(figsize=(xs, ys))
     plot_box_score = sns.boxplot(x='variable', y='value', data=df_cat_long,ax=ax)
     plot_box_score.set(title=f"Boxplot of scores for articles classified as {cat}\n{config_dict['CLASSIFICATION_INPUT_TEXT']}\n{config_dict['CLASSIFICATION_PRETRAINED_MODEL']} - {config_dict['CLASSIFICATION_PRETRAINED_MODEL_REVISION']}\n{column}")
-    plot_filepath = f'{config_dict["BOXPLOT_SAVE_DIR"]}boxplot_scores_{cat}_{column}_{config_dict["CLASSIFICATION_INPUT_TEXT"]}_{pretrained_model}_{config_dict["CLASSIFICATION_PRETRAINED_MODEL_REVISION"]}.png'
+    plot_filepath = f'{config_dict["BOXPLOT_SAVE_DIR"]}/{column}/boxplot_scores_{cat}_{column}_{config_dict["CLASSIFICATION_INPUT_TEXT"]}_{str(config_dict["TEST_THRESHOLDS"])}_{config_dict["TEST_THRESHOLDS_METHOD"]}_{config_dict["TEST_LABELS"]}_{pretrained_model}_{config_dict["CLASSIFICATION_PRETRAINED_MODEL_REVISION"]}.png'
+    # plot_filepath = f'{config_dict["BOXPLOT_SAVE_DIR"]}boxplot_scores_{cat}_{column}_{config_dict["CLASSIFICATION_INPUT_TEXT"]}_{pretrained_model}_{config_dict["CLASSIFICATION_PRETRAINED_MODEL_REVISION"]}.png'
     # import pdb;pdb.set_trace()
     plt.savefig(plot_filepath)
     if show_plot:
@@ -399,13 +433,44 @@ if __name__ == "__main__":
     print(df_summary_secondary_class)
     # df_summary_classes = df_summary_classes[['primaryClass']]
 
+    # Test Thresholds
+
+    # import pdb;pdb.set_trace()
+    primary_category = []
+    if config_dict['TEST_THRESHOLDS'] is True:
+
+        # first start with just max score
+
+        for index, row in df.iterrows():
+
+            print()
+            print(row)
+            try:
+                score = list(eval(row['score']))
+            except:
+                score = list(row['score'])
+            # find the index for the max score
+            max_score_index = score.index(max(score))
+            print(score)
+            print(max_score_index)
+            if config_dict['TEST_THRESHOLDS_METHOD'] == 'max':
+                primary_category.append(categories[max_score_index])
+
+
+    # import pdb;pdb.set_trace()
     # Create a new column in df called 'primaryCategory' that takes the first element from the list contained in the column 'category'
-    df['category'] = df['category'].apply(eval)
-    # change any emptly lists in the column 'category' to ['Other']
-    df['category'] = df['category'].apply(lambda x: ['Other'] if len(x) == 0 else x)
-    # import pdb;pdb.set_trace()
-    df['primaryCategory'] = df['category'].apply(lambda x: x[0])
-    # import pdb;pdb.set_trace()
+    else:
+        try:
+            df['category'] = df['category'].apply(eval)
+        except:
+            df['category'] = df['category']
+        # change any emptly lists in the column 'category' to ['Other']
+        df['category'] = df['category'].apply(lambda x: ['Other'] if len(x) == 0 else x)
+        # import pdb;pdb.set_trace()
+        df['primaryCategory'] = df['category'].apply(lambda x: x[0])
+        # import pdb;pdb.set_trace()
+
+    df['primaryCategory'] = primary_category
 
     # Now calculate the precision, recall, and f_beta score for each category
 
@@ -426,6 +491,7 @@ if __name__ == "__main__":
     print('Metrics micro F1: ', metrics_micro_f1)
     print('Metrics: ', metrics_by_class)
 
+    # import pdb;pdb.set_trace()
     ############################
     # Plotting
     ############################
@@ -467,10 +533,59 @@ if __name__ == "__main__":
                                    labels=categories,
                                    zero_division=np.nan)
 
+        metrics_recall = recall_score(df['primaryClass'],
+                                   df['primaryCategory'],
+                                   average=None,
+                                   labels=categories,
+                                   zero_division=np.nan)
+
+        metrics_precision = precision_score(df['primaryClass'],
+                                   df['primaryCategory'],
+                                   average=None,
+                                   labels=categories,
+                                   zero_division=np.nan)
         print()
         print(f'beta: {beta}')
         print(metrics_beta)
         for i, cat in enumerate(categories):
-            print(f'{cat}: {metrics_beta[i]:.2f}')
+            print(f'{cat} fbeta: {metrics_beta[i]:.2f}')
+        for i, cat in enumerate(categories):
+            print(f'{cat} recall: {metrics_recall[i]:.2f}')
+        for i, cat in enumerate(categories):
+            print(f'{cat} precision: {metrics_precision[i]:.2f}')
+
+        # combine categories and metrics into a dataframe
+        metrics_dict = {'category': categories,
+                        'fbeta': metrics_beta,
+                        'recall': metrics_recall,
+                        'precision': metrics_precision}
+
+        metrics_df = pd.DataFrame(metrics_dict)
+
+        print('Dataframe')
+        print(metrics_df)
+
+    # Examine Earth Science Results
+    if config_dict['EXPLORE_EARTH_SCIENCE'] is True:
+
+        print('Examine Earth Science Results')
+
+        df_earth = df[df['primaryClass'] == 'Earth Science']
+
+        # import pdb;pdb.set_trace()
+
+        # plot a histogram of the scores for Earth Science
+ 
+        xs = 14
+        ys = 8
+
+        fig, ax = plt.subplots(figsize=(xs, ys))
+        plot_es_hist = sns.histplot(x='new score Earth', data=df_earth)
+
+        plot_es_hist.set(title=f"Earth Science Scores for Records Hand Classified as Earth Science\n{config_dict['CLASSIFICATION_INPUT_TEXT']}\n{config_dict['CLASSIFICATION_PRETRAINED_MODEL']} - {config_dict['CLASSIFICATION_PRETRAINED_MODEL_REVISION']}")
+        plt.savefig('figures/earth_science_hist.png')
+        plt.show()
+
+        import pdb;pdb.set_trace()
 
     import pdb;pdb.set_trace()
