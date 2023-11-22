@@ -15,13 +15,16 @@ DATA_SAMPLE_CLASSIFIED = '/Users/thomasallen/Code/SciX_Classifier/data/ground_tr
 DATA_EXTRA_HELIO = '/Users/thomasallen/Code/SciX_Classifier/data/helio_nature_science_bibcode_list.csv'
 DATA_EXTRA_PLANETARY = '/Users/thomasallen/Code/SciX_Classifier/data/ps_nature_science_bibcode_list.csv'
 # DATA_SAMPLE_CLASSIFIED_NEW = '/Users/thomasallen/Code/SciX_Classifier/data/ground_truth_sample_classified_new.csv' # Latest classified sample
-DATA_SAMPLE_CLASSIFIED_NEW = "/Users/thomasallen/Code/SciX_Classifier/data/ground_truth_sample_classified_title_abstract_no_labels.csv"
+DATA_SAMPLE_CLASSIFIED_NEW = "/Users/thomasallen/Code/SciX_Classifier/data/ground_truth_sample_classified_title_abstract_no_labels_chkp32100.csv"
 # Classification Parameters
 RUN_SAMPLE_CLASSIFICATION = "no"
 CLASSIFICATION_INPUT_TEXT = "title abstract"
 # CLASSIFICATION_INPUT_TEXT = 'Abstract' # 'title', 'abstract' 'title abstract'
 # Classification Model
+PUBLISHED_MODEL = False
 CLASSIFICATION_PRETRAINED_MODEL = "adsabs/ASTROBERT"
+# CLASSIFICATION_PRETRAINED_MODEL_UNPUBLISHED = "/Users/thomasallen/Code/SciX_Classifier/models/checkpoint-32100"
+CLASSIFICATION_PRETRAINED_MODEL_UNPUBLISHED = "/Users/thomasallen/Code/SciX_Classifier/models/checkpoint-32100"
 CLASSIFICATION_PRETRAINED_MODEL_REVISION = "SciX-Categorizer"
 CLASSIFICATION_INPUT_TEXT = "title abstract"
 # Plots
@@ -36,3 +39,4 @@ TEST_THRESHOLDS_METHOD = "max"
 TEST_LABELS = False
 
 EXPLORE_EARTH_SCIENCE = True
+EARTH_SCIENCE_THRESHOLD = 0.015

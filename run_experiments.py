@@ -128,13 +128,22 @@ def classify_sample(return_df=False):
     labels = ['Astronomy', 'Heliophysics', 'Planetary Science', 'Earth Science', 'NASA-funded Biophysics', 'Other Physics', 'Other', 'Text Garbage']
     id2label = {i:c for i,c in enumerate(labels) }
     label2id = {v:k for k,v in id2label.items()}
-    model = AutoModelForSequenceClassification.from_pretrained(pretrained_model_name_or_path=config_dict['CLASSIFICATION_PRETRAINED_MODEL'],
-                                    revision=config_dict['CLASSIFICATION_PRETRAINED_MODEL_REVISION'],
-                                    num_labels=len(labels),
-                                    problem_type='multi_label_classification',
-                                    id2label=id2label,
-                                    label2id=label2id
-                                    )
+    if config_dict['PUBLISHED_MODEL'] is True:
+        model = AutoModelForSequenceClassification.from_pretrained(pretrained_model_name_or_path=config_dict['CLASSIFICATION_PRETRAINED_MODEL'],
+                                        revision=config_dict['CLASSIFICATION_PRETRAINED_MODEL_REVISION'],
+                                        num_labels=len(labels),
+                                        problem_type='multi_label_classification',
+                                        id2label=id2label,
+                                        label2id=label2id
+                                        )
+    else:
+        model = AutoModelForSequenceClassification.from_pretrained(pretrained_model_name_or_path=config_dict['CLASSIFICATION_PRETRAINED_MODEL_UNPUBLISHED'],
+                                        revision=config_dict['CLASSIFICATION_PRETRAINED_MODEL_REVISION'],
+                                        num_labels=len(labels),
+                                        problem_type='multi_label_classification',
+                                        id2label=id2label,
+                                        label2id=label2id
+                                        )
     
 
     print('Tokenizer and model loaded')
@@ -372,6 +381,163 @@ def calculate_f_beta_score(ground_truth, model_predictions, beta=1):
     pass
 
 
+def display_mtrics(df, truth_column = 'primaryClass', model_column='primaryCategory'):
+    """Display the precision, recall, and f_beta score for each category"""
+
+    # let beta range from 0 to 1 in 0.1 increments
+    # beta_range = np.arange(0.5, 2.2, 0.25)
+    beta_range = np.array([0.5, 1.0, 2.0])
+
+    for index, beta in enumerate(beta_range):
+        metrics_beta = fbeta_score(df[truth_column],
+                                   df[model_column],
+                                   beta=beta,
+                                   average=None,
+                                   labels=categories,
+                                   zero_division=np.nan)
+
+        metrics_recall = recall_score(df[truth_column],
+                                   df[model_column],
+                                   average=None,
+                                   labels=categories,
+                                   zero_division=np.nan)
+
+        metrics_precision = precision_score(df[truth_column],
+                                   df[model_column],
+                                   average=None,
+                                   labels=categories,
+                                   zero_division=np.nan)
+        print()
+        print(f'beta: {beta}')
+        print(metrics_beta)
+        for i, cat in enumerate(categories):
+            print(f'{cat} fbeta: {metrics_beta[i]:.2f}')
+        for i, cat in enumerate(categories):
+            print(f'{cat} recall: {metrics_recall[i]:.2f}')
+        for i, cat in enumerate(categories):
+            print(f'{cat} precision: {metrics_precision[i]:.2f}')
+
+    # combine categories and metrics into a dataframe
+    metrics_dict = {'category': categories,
+                    'fbeta': metrics_beta,
+                    'recall': metrics_recall,
+                    'precision': metrics_precision}
+
+    metrics_df = pd.DataFrame(metrics_dict)
+
+    print('Dataframe')
+    print(metrics_df)
+
+    return metrics_df
+
+
+def count_multiple_classes(df,class_columns=['primaryClass','secondaryClass'],model_columns=['primaryCategory']):
+
+    # Select coluumns to join with long table after melt
+    keep_cols = ['bibcode','title','abstract','new score AST', 'new score Helio',
+                        'new score Planetary', 'new score Earth', 'new score BPS',
+                        'new score Other PHY', 'new score Other', 'new score Text Garbage',
+                        'primaryCategory', 'revised_category']
+
+    df_to_merge = df[keep_cols]
+
+
+    # loop through each row in the dataframe
+    for index, row in df.iterrows():
+
+        classes = [row['primaryClass']]
+        if row['secondaryClass'] != "FALSE":
+            classes.append(row['secondaryClass'])
+
+        # print()
+        # print(index)
+        # print(classes)
+
+    # make a long dataframe with one column that combines the primary and secondary classes
+    df_long = pd.melt(df, id_vars=['bibcode'], value_vars=['primaryClass', 'secondaryClass'])
+
+    df_long = df_long[df_long['value'] != 'FALSE']
+
+    df_long = df_long.merge(df_to_merge, on='bibcode', how='left')
+
+    return df_long
+
+def threshold_scores(df,score_cols=['category','score']):
+
+    print(df)
+
+    keep_cols = ['bibcode'] + score_cols
+
+    df_score = df[keep_cols]
+
+    max_category = []
+    max_score = []
+    all_categories = []
+    all_scores = []
+
+    out_list = []
+
+    general_threshold = 0.1
+    indices=None
+    minor_class=None
+    select_minor_class=None
+    select_minor_score=None
+
+    # loop through each row in the dataframe
+    for index, row in df.iterrows():
+        
+        # Get the scores
+        scores = list(eval(row['score']))
+        categories = list(eval(row['category']))
+        # find the index for the max score
+        max_score_index = scores.index(max(scores))
+
+        # Get the category
+        max_category = categories[max_score_index]
+        max_score = scores[max_score_index]
+        # print(np.max(np.array(row['score'])))
+
+        # find the indices of the scores that are greater than the threshold
+        # indices = np.where(np.array(scores) > general_threshold)
+        indices = np.argwhere(np.array(scores) > general_threshold)
+        indices = [i[0] for i in indices]
+
+        if len(indices) > 0:
+
+            # Remove the max score index from the indices   
+            minor_class = set(indices) - set([max_score_index])
+            select_minor_class = [categories[i] for i in minor_class]
+            select_minor_score = [scores[i] for i in minor_class]
+
+
+        # import pdb;pdb.set_trace()
+
+        if indices is not None:
+
+            select_categories = [categories[i] for i in indices]
+            select_scores = [scores[i] for i in indices]
+
+        print(index)
+        # print(indices2)
+        print(select_categories)
+        print(select_scores)
+
+        out_list.append({'bibcode': row['bibcode'],
+                         'max_category': max_category,
+                         'max_score': max_score,
+                         'select_categories': select_categories,
+                         'select_scores': select_scores})
+
+
+    df_out = pd.DataFrame(out_list)
+        # import pdb;pdb.set_trace()
+
+    return df_out
+
+
+    # import pdb;pdb.set_trace()
+
+
 
 if __name__ == "__main__":
 
@@ -584,8 +750,35 @@ if __name__ == "__main__":
 
         plot_es_hist.set(title=f"Earth Science Scores for Records Hand Classified as Earth Science\n{config_dict['CLASSIFICATION_INPUT_TEXT']}\n{config_dict['CLASSIFICATION_PRETRAINED_MODEL']} - {config_dict['CLASSIFICATION_PRETRAINED_MODEL_REVISION']}")
         plt.savefig('figures/earth_science_hist.png')
-        plt.show()
+        # plt.show()
 
-        import pdb;pdb.set_trace()
+        # Can sinply chaninging the threshold change the number of papers classified as Earth Science?
+        # We will set a secondary threshold if record classes as "Other"
+        df['revised_category'] = df['primaryCategory']
+        ES_THRESHOLD = config_dict['EARTH_SCIENCE_THRESHOLD']
+
+        for index, row in df.iterrows():
+
+            # import pdb;pdb.set_trace()
+            if row['primaryCategory'] == 'Other':
+
+                # Revise Earth Science category
+                if row['new score Earth'] >= ES_THRESHOLD:
+                    df.loc[index, 'revised_category'] = 'Earth Science'
+
+
+        df_earth_revised = df[df['revised_category'] == 'Earth Science']
+
+        revised_metrics_df = display_mtrics(df, truth_column = 'primaryClass', model_column='revised_category')
+
+        # import pdb;pdb.set_trace()
+
+
+    df_long = count_multiple_classes(df,class_columns=['primaryClass','secondaryClass'])
+
+    df_thresh = threshold_scores(df)
+
+    # join df and df_thresh on bibcode
+    df_comb = df.merge(df_thresh, on='bibcode', how='left')
 
     import pdb;pdb.set_trace()
