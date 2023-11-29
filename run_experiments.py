@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
+from sklearn.preprocessing import MultiLabelBinarizer
 from sklearn.metrics import fbeta_score, precision_score, recall_score, precision_recall_fscore_support
 
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
@@ -381,35 +382,55 @@ def calculate_f_beta_score(ground_truth, model_predictions, beta=1):
     pass
 
 
-def display_mtrics(df, truth_column = 'primaryClass', model_column='primaryCategory'):
+def display_mtrics(df, truth_column = 'primaryClass', model_column='primaryCategory',multiple=False):
     """Display the precision, recall, and f_beta score for each category"""
 
     # let beta range from 0 to 1 in 0.1 increments
     # beta_range = np.arange(0.5, 2.2, 0.25)
     beta_range = np.array([0.5, 1.0, 2.0])
 
+    average_mode = None
+
     for index, beta in enumerate(beta_range):
-        metrics_beta = fbeta_score(df[truth_column],
-                                   df[model_column],
-                                   beta=beta,
-                                   average=None,
-                                   labels=categories,
-                                   zero_division=np.nan)
 
-        metrics_recall = recall_score(df[truth_column],
-                                   df[model_column],
-                                   average=None,
-                                   labels=categories,
-                                   zero_division=np.nan)
-
-        metrics_precision = precision_score(df[truth_column],
-                                   df[model_column],
-                                   average=None,
-                                   labels=categories,
-                                   zero_division=np.nan)
+        if multiple is False:
+            metrics_beta = fbeta_score(df[truth_column],
+                                       df[model_column],
+                                       beta=beta,
+                                       average=average_mode,
+                                       labels=categories,
+                                       zero_division=np.nan)
+            metrics_recall = recall_score(df[truth_column],
+                                       df[model_column],
+                                       average=average_mode,
+                                       labels=categories,
+                                       zero_division=np.nan)
+            metrics_precision = precision_score(df[truth_column],
+                                       df[model_column],
+                                       average=average_mode,
+                                       labels=categories,
+                                       zero_division=np.nan)
+        elif multiple is True:
+            metrics_beta = fbeta_score(df[truth_column],
+                                       df[model_column],
+                                       beta=beta,
+                                       average=average_mode,
+                                       # labels=categories,
+                                       zero_division=np.nan)
+            metrics_recall = recall_score(df[truth_column],
+                                       df[model_column],
+                                       average=average_mode,
+                                       # labels=categories,
+                                       zero_division=np.nan)
+            metrics_precision = precision_score(df[truth_column],
+                                       df[model_column],
+                                       average=average_mode,
+                                       # labels=categories,
+                                       zero_division=np.nan)
         print()
         print(f'beta: {beta}')
         print(metrics_beta)
+        # import pdb;pdb.set_trace()
         for i, cat in enumerate(categories):
             print(f'{cat} fbeta: {metrics_beta[i]:.2f}')
         for i, cat in enumerate(categories):
@@ -462,7 +483,7 @@ def count_multiple_classes(df,class_columns=['primaryClass','secondaryClass'],mo
 
     return df_long
 
-def threshold_scores(df,score_cols=['category','score']):
+def threshold_scores(df,score_cols=['category','score'],ground_truth_cols=['primaryClass','secondaryClass']):
 
     print(df)
 
@@ -477,7 +498,8 @@ def threshold_scores(df,score_cols=['category','score']):
 
     out_list = []
 
-    general_threshold = 0.1
+    general_threshold = config_dict['GENERAL_THRESHOLD']
+    earth_science_threshold = config_dict['EARTH_SCIENCE_THRESHOLD']
     indices=None
     minor_class=None
     select_minor_class=None
@@ -497,8 +519,17 @@ def threshold_scores(df,score_cols=['category','score']):
         max_score = scores[max_score_index]
         # print(np.max(np.array(row['score'])))
 
+        # If Max category is "Other" then check for Earth Science first
+        # Using the earth science threshold
+        if max_category == 'Other':
+            es_score = scores[categories.index('Earth Science')]
+            if es_score > earth_science_threshold:
+                max_category = 'Earth Science'
+                max_score = es_score
         # find the indices of the scores that are greater than the threshold
         # indices = np.where(np.array(scores) > general_threshold)
+
+        # Apply the general threshold
         indices = np.argwhere(np.array(scores) > general_threshold)
         indices = [i[0] for i in indices]
 
@@ -517,10 +548,10 @@ def threshold_scores(df,score_cols=['category','score']):
             select_categories = [categories[i] for i in indices]
             select_scores = [scores[i] for i in indices]
 
-        print(index)
+        # print(index)
         # print(indices2)
-        print(select_categories)
-        print(select_scores)
+        # print(select_categories)
+        # print(select_scores)
 
         out_list.append({'bibcode': row['bibcode'],
                          'max_category': max_category,
@@ -536,6 +567,127 @@ def threshold_scores(df,score_cols=['category','score']):
 
 
     # import pdb;pdb.set_trace()
+
+def match_metrics(df,column='match_max_primary',text='Max score, Primary match only'):
+
+
+    print()
+    print(f'Counts for {text}')
+    df_counts = df.groupby(column).size().reset_index(name='counts')
+    print(df_counts)
+
+    false = df_counts[df_counts[column] == False]['counts'].values[0]
+    true = df_counts[df_counts[column] == True]['counts'].values[0]
+
+    # import pdb;pdb.set_trace()
+
+    # For each category calculate percent correct
+    percent_correct = true / (true + false)
+
+    print(f'Percent correct for {text}: {percent_correct:.2f}')
+
+def mulitclass_metrics(df, categories=['Astronomy', 'Heliophysics', 'Planetary Science', 'Earth Science', 'NASA-funded Biophysics', 'Other Physics', 'Other', 'Text Garbage']):
+
+    gt_list = []
+    model_list = []
+    gt_names_list = []
+    model_names_list = []
+
+    # replace all instances of "Biology" with 'NASA-funded Biophysics' in the column 'secondaryClass'
+    df['secondaryClass'] = df['secondaryClass'].replace('Biology', 'NASA-funded Biophysics')
+
+    # loop through dataframe
+    for index, row in df.iterrows():
+
+        ind1 = None
+        ind2 = None
+
+        # Get index of primaryClass in categories
+        ind1 = categories.index(row['primaryClass'])
+
+        if row['secondaryClass'] != 'FALSE':
+            gt_list.append([categories.index(row['primaryClass']), categories.index(row['secondaryClass'])])
+            gt_names_list.append(set([row['primaryClass'], row['secondaryClass']]))
+        else:
+            gt_list.append([categories.index(row['primaryClass'])])
+            gt_names_list.append(set([row['primaryClass']]))
+
+        # Get index of model prediction in categories
+        model_list.append([categories.index(i) for i in row['predicted_categories']])
+        model_names_list.append(row['predicted_categories'])
+
+        verbose = False
+        if verbose:
+            print()
+            print(row['bibcode'])
+            print('Ground Truth')
+            print(row['primaryClass'])
+            print(row['secondaryClass'])
+            print('Ground Truth: ', gt_list[-1])
+            print('Model')
+            print(row['predicted_categories'])
+            print('Model Prediction: ', model_list[-1])
+
+    # Need to Clean all this up
+    mlb = MultiLabelBinarizer()
+    gt_list_bin =  list(mlb.fit_transform(gt_list))
+    # Add a zero for the "Text Garbage" category
+    # gt_list_bin = np.insert(gt_list_bin, 7, 0, axis=1)
+    # import pdb;pdb.set_trace()
+    gt_list_bin = [np.append(i,[0]) for i in gt_list_bin]
+    model_list_bin = list(mlb.fit_transform(model_list))
+    # Convert a list of arrays into an array of lists
+    gt_list_bin = np.array([list(i) for i in gt_list_bin])
+    model_list_bin = np.array([list(i) for i in model_list_bin])
+    # import pdb;pdb.set_trace()
+    # import pdb;pdb.set_trace()
+    df_sk = pd.DataFrame({'bibcode': df['bibcode'].values,
+                          'ground_truth_names': gt_names_list,
+                          'model_prediction_names': model_names_list,
+                          'ground_truth': gt_list,
+                          'model_prediction': model_list,
+                          'ground_truth_mlb' : list(gt_list_bin),
+                          'model_prediction_mlb' : list(model_list_bin),
+                          'ground_truth_strings' : [str(i) for i in gt_list],
+                          'model_prediction_strings' : [str(i) for i in model_list]})
+
+    df_sk.to_csv('df_sklearn_format.csv')
+
+
+    # display_mtrics(df_sk, truth_column = 'ground_truth_mlb', model_column='model_prediction_mlb',multiple=True)
+
+
+    # metrics_beta = fbeta_score(gt_list_bin,
+    #                            model_list_bin,
+    #                            beta=2,
+    #                            average=None,
+    #                            labels=categories,
+    #                            zero_division=np.nan)
+
+        # metrics_recall = recall_score(df[truth_column],
+    metric_average = None
+    metrics_beta = fbeta_score(gt_list_bin,model_list_bin,beta=2,average=metric_average,zero_division=np.nan)
+    metrics_recall = recall_score(gt_list_bin,model_list_bin,average=metric_average,zero_division=np.nan)
+    metrics_precision = precision_score(gt_list_bin,model_list_bin,average=metric_average,zero_division=np.nan)
+    # gg=gt_list_bin[0:3]
+    # mm=model_list_bin[0:3]
+
+    for index, cat in enumerate(categories):
+        print(f'{cat} fbeta: {metrics_beta[index]:.2f}')
+        print(f'{cat} recall: {metrics_recall[index]:.2f}')
+        print(f'{cat} precision: {metrics_precision[index]:.2f}')
+
+    metrics_dict = {'category': categories,
+                    'fbeta': metrics_beta,
+                    'recall': metrics_recall,
+                    'precision': metrics_precision}
+
+    metrics_df = pd.DataFrame(metrics_dict)
+    print(metrics_df)
+
+    # import pdb;pdb.set_trace()
+
+    # first loop through and transform results into one-hot vector style
 
 
 
@@ -609,21 +761,25 @@ if __name__ == "__main__":
 
         for index, row in df.iterrows():
 
-            print()
-            print(row)
+            # print()
+            # print(row)
             try:
                 score = list(eval(row['score']))
             except:
                 score = list(row['score'])
             # find the index for the max score
             max_score_index = score.index(max(score))
-            print(score)
-            print(max_score_index)
+            # print(score)
+            # print(max_score_index)
             if config_dict['TEST_THRESHOLDS_METHOD'] == 'max':
                 primary_category.append(categories[max_score_index])
 
+        df['primaryCategory'] = primary_category
+
 
     # import pdb;pdb.set_trace()
+    # If not testing thresholds, then just use the default output from the classifier 
+    # should be max
     # Create a new column in df called 'primaryCategory' that takes the first element from the list contained in the column 'category'
     else:
         try:
@@ -636,9 +792,10 @@ if __name__ == "__main__":
         df['primaryCategory'] = df['category'].apply(lambda x: x[0])
         # import pdb;pdb.set_trace()
 
-    df['primaryCategory'] = primary_category
 
     # Now calculate the precision, recall, and f_beta score for each category
+
+    # First set of metrics based off of max score matching a single category
 
     metrics_micro_f1 = precision_recall_fscore_support(df['primaryClass'],
                                               df['primaryCategory'],
@@ -731,6 +888,20 @@ if __name__ == "__main__":
         print('Dataframe')
         print(metrics_df)
 
+    # Last metric just proportion of corrext matches - to compare with multiclass later
+
+    df['match_max_primary'] = False
+    df['match_max_primary_secondary'] = False
+    for index, row in df.iterrows():
+        if row['primaryClass'] == row['primaryCategory']:
+            df.at[index, 'match_max_primary'] = True
+        if row['primaryClass'] == row['primaryCategory'] or row['secondaryClass'] == row['primaryCategory']:
+            df.at[index, 'match_max_primary_secondary'] = True
+
+
+    match_metrics(df,column='match_max_primary',text='Max score, Primary match only')
+    match_metrics(df,column='match_max_primary_secondary',text='Max score, Primary or Secondary match')
+
     # Examine Earth Science Results
     if config_dict['EXPLORE_EARTH_SCIENCE'] is True:
 
@@ -757,6 +928,7 @@ if __name__ == "__main__":
         df['revised_category'] = df['primaryCategory']
         ES_THRESHOLD = config_dict['EARTH_SCIENCE_THRESHOLD']
 
+        df['match_max_primary_ES_Revised'] = False
         for index, row in df.iterrows():
 
             # import pdb;pdb.set_trace()
@@ -766,19 +938,96 @@ if __name__ == "__main__":
                 if row['new score Earth'] >= ES_THRESHOLD:
                     df.loc[index, 'revised_category'] = 'Earth Science'
 
+            if row['primaryClass'] == row['revised_category']:
+                df.at[index, 'match_max_primary_ES_Revised'] = True
+
 
         df_earth_revised = df[df['revised_category'] == 'Earth Science']
 
+        print('Earth Science Revised - Max Score replace Other with ES if ES score > 0.015)')
         revised_metrics_df = display_mtrics(df, truth_column = 'primaryClass', model_column='revised_category')
 
         # import pdb;pdb.set_trace()
 
+        # match_metrics(df,column='match_max_primary_ES_Revice',text='Max score, Primary match only')
 
-    df_long = count_multiple_classes(df,class_columns=['primaryClass','secondaryClass'])
+    if config_dict['EXPLORE_MULTI_CLASS'] is True:
 
-    df_thresh = threshold_scores(df)
+        print('Explore Multi Class Results')
 
-    # join df and df_thresh on bibcode
-    df_comb = df.merge(df_thresh, on='bibcode', how='left')
 
+        # df_long = count_multiple_classes(df,class_columns=['primaryClass','secondaryClass'])
+
+        df_thresh = threshold_scores(df)
+
+        # join df and df_thresh on bibcode
+        df_comb = df.merge(df_thresh, on='bibcode', how='left')
+
+        df_comb['match_set'] = False
+        df_comb['overlap_percent_model'] = 0.0
+        df_comb['predicted_categories'] = None
+        df_comb['false_positives'] = None
+
+        # Compare model results to ground truth with multiple potential classes
+        # loop through each row in the dataframe
+        for index, row in df_comb.iterrows():
+            if row['secondaryClass'] == 'FALSE':
+                ground_truth = set([row['primaryClass']])
+            else:
+                ground_truth = set([row['primaryClass'], row['secondaryClass']])
+            # model_predictions = set([eval(row['select_categories'])])
+            model_predictions = set(row['select_categories'])
+
+            lgt = len(ground_truth)
+            lmp = len(model_predictions)
+
+            match = ground_truth.intersection(model_predictions)
+            lmt = len(match)
+
+            if lmt > 0:
+                df_comb.at[index, 'match_set'] = True
+
+
+            # Calculate the percent overlap between the ground truth and model predictions
+            df_comb.at[index, 'overlap_percent_model'] = lmt / lmp
+            df_comb.at[index, 'predicted_categories'] = model_predictions
+
+            # look at False Positivies, i.e. model predicts a category that is not in the ground truth
+
+            false_positives = model_predictions - ground_truth
+            df_comb.at[index, 'false_positives'] = false_positives
+
+
+
+
+            # print()
+            # print(index)
+            # print(ground_truth)
+            # print(model_predictions)
+            # print(match)
+
+
+        # Calculate the proportion of records that get at least one corect identification
+        # print('Counts of set matches - True/False')
+        # df_counts = df.groupby('match_set').size().reset_index(name='counts')
+        # print(df_counts)
+
+
+        match_metrics(df_comb,column='match_set',text='Matching sets using threshold scores')
+
+
+    # if config_dict['EXPLORE_MULTI_CLASS'] is True and config_dict['EXPLORE_EARTH_SCIENCE'] is True:
+
+        # print('Original Results')
+
+    match_metrics(df_comb,column='match_max_primary',text='Max score, Primary match only')
+    match_metrics(df_comb,column='match_max_primary_secondary',text='Max score, Primary or Secondary match')
+    match_metrics(df_comb,column='match_max_primary_ES_Revised',text='Max score, Primary match only, ES revised')
+    match_metrics(df_comb,column='match_set',text='Matching sets using threshold scores')
+
+
+    df_comb.to_csv('multi_class_test.csv')
+
+    mulitclass_metrics(df_comb,categories)
     import pdb;pdb.set_trace()
+    # df_comb.to_csv('first_multi_class.csv')
