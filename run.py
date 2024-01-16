@@ -49,9 +49,9 @@ if __name__ == '__main__':
 
     parser.add_argument('-n',
                         '--new_records',
-                        dest='reindex_claims',
+                        dest='new records',
                         action='store_true',
-                        help='Reindex claims')
+                        help='Process new records')
 
 
     args = parser.parse_args()
