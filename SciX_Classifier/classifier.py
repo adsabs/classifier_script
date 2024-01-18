@@ -2,10 +2,6 @@ from tqdm.auto import tqdm
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from torch import no_grad, tensor
 
-# from ..utilities import input_ids_splitter, add_special_tokens_split_input_ids
-from input_ids_splitter import input_ids_splitter
-from add_special_tokens_split_input_ids import add_special_tokens_split_input_ids
-
 
 # split tokenized text into chunks for the model
 def input_ids_splitter(input_ids, window_size=510, window_stride=255):

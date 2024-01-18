@@ -1,5 +1,6 @@
 # from __future__ import absolute_import, unicode_literals
 import adsputils
+from adsputils import ADSCelery
 # from adsmsg import OrcidClaims
 # from SciXClassifier import app as app_module
 # from SciXClassifier import updater
@@ -47,6 +48,19 @@ def task_send_input_record_to_classifier(message):
         {
          'bibcode': String (19 chars),
          'title': String,
+         'abstract':String
+        }
+    :return: no return
+    """
+def task_index_classified_record(message):
+    """
+    Update the database with the new classification
+
+
+    :param message: contains the message inside the packet
+        {
+         'bibcode': String (19 chars),
+         'collections': [String],
          'abstract':String
         }
     :return: no return
