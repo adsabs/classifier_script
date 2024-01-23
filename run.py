@@ -126,6 +126,7 @@ def prepare_records(records_path):
 
         # Is it at this point that a messesge should be sent to the 
         # classification queue? 
+        # tasks.task_send_input_record_to_classifier.delay(record)
 
     
     # TODO
