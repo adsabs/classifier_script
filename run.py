@@ -212,7 +212,7 @@ def classify_record_from_scores(record):
     import pdb;pdb.set_trace()
 
 
-    # NOte these if statements are becaise the classifier returns a list of
+    # Note these if statements are because the classifier returns a list of
     # lists so it can batch process records. If only one record is sent, it
     # returns a list of one list. This should be addressed
     scores = record['scores']
