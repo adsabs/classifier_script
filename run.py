@@ -124,6 +124,9 @@ def prepare_records(records_path):
         record['text'] = row['title'] + ' ' + row['abstract']
         records.append(record)
 
+        # Is it at this point that a messesge should be sent to the 
+        # classification queue? 
+
     
     # TODO
     # Maybe using pandas is not the best way to do this?? - Consider
@@ -137,9 +140,9 @@ def prepare_records(records_path):
     # import pdb;pdb.set_trace()
     return records
 
-def score_records(records_path):
+def score_record(record):
     """
-    Provide classification scores for a list of records using the following
+    Provide classification scores for a record using the following
         categories:
             1 - Astronomy
             2 - HelioPhysics
@@ -159,41 +162,36 @@ def score_records(records_path):
     records : list of dictionaries with the following keys: bibcode, text,
                 categories, scores, and model information
     """
-    # Send records to classifier
-    # Update database with new classifications
-
     # Load model and tokenizer
     model_dict = load_model_and_tokenizer()
 
     # load and prepare records
     records = prepare_records(records_path)
 
-   # for bib, text in zip(test_bibs, test_text):
-    for index, record in enumerate(records):
 
-        # Classify record
-        tmp_categories, tmp_scores = classifier.batch_assign_SciX_categories(
-                                    [record['text']],model_dict['tokenizer'],
-                                    model_dict['model'],model_dict['labels'],
-                                    model_dict['id2label'],model_dict['label2id'])
+    # Classify record
+    # tmp_categories, tmp_scores = classifier.batch_assign_SciX_categories(
+    record['categories'], record['scores'] = classifier.batch_assign_SciX_categories(
+                                [record['text']],model_dict['tokenizer'],
+                                model_dict['model'],model_dict['labels'],
+                                model_dict['id2label'],model_dict['label2id'])
 
-        # Append classification to record
-        record['categories'] = tmp_categories
-        record['scores'] = tmp_scores
+    # Append classification to record
+    # record['categories'] = tmp_categories
+    # record['scores'] = tmp_scores
 
-        # Append model information to record
-        record['model'] = model_dict['model']
+    # Append model information to record
+    record['model'] = model_dict['model']
 
-        records[index] = record
 
         # print("Record: {}".format(record['bibcode']))
         # print("Text: {}".format(record['text']))
         # print("Categories: {}".format(tmp_categories))
         # print("Scores: {}".format(tmp_scores))
 
-    return records
+    return record
 
-def classify_records_from_scores(records):
+def classify_record_from_scores(record):
     """
     Classify a record after it has been scored. 
 
@@ -213,57 +211,55 @@ def classify_records_from_scores(records):
     print('Thresholds: {}'.format(thresholds))
     import pdb;pdb.set_trace()
 
-    # Loop through records
-    for index, record in enumerate(records):
 
-        # NOte these if statements are becaise the classifier returns a list of
-        # lists so it can batch process records. If only one record is sent, it
-        # returns a list of one list. This should be addressed
-        scores = record['scores']
-        if len(scores) == 1:
-            scores = scores[0]
-        categories = record['categories']
-        if len(categories) == 1:
-            categories = categories[0]
-        # max_score_index = scores.index(max(scores))
-        # max_category = categories[max_score_index]
-        # max_score = scores[max_score_index]
+    # NOte these if statements are becaise the classifier returns a list of
+    # lists so it can batch process records. If only one record is sent, it
+    # returns a list of one list. This should be addressed
+    scores = record['scores']
+    if len(scores) == 1:
+        scores = scores[0]
+    categories = record['categories']
+    if len(categories) == 1:
+        categories = categories[0]
+    # max_score_index = scores.index(max(scores))
+    # max_category = categories[max_score_index]
+    # max_score = scores[max_score_index]
 
-        import pdb;pdb.set_trace()
-        meet_threshold = [score > threshold for score, threshold in zip(scores, thresholds)]
-        import pdb;pdb.set_trace()
+    import pdb;pdb.set_trace()
+    meet_threshold = [score > threshold for score, threshold in zip(scores, thresholds)]
+    import pdb;pdb.set_trace()
 
-        # Extra step to check for "Earth Science" articles miscategorized as "Other"
-        # This is expected to be less neccessary with improved training data
-        if config['ADDITIONAL_EARTH_SCIENCE_PROCESSING'] is True:
-            # If "Other" is the max category
-            # if max_category == 'Other':
-            #     es_score = scores[categories.index('Earth Science')]
-            #     if es_score > config['ADDITIONAL_EARTH_SCIENCE_PROCESSING_THRESHOLD']:
-            #         max_category = 'Earth Science'
-            #         max_score = es_score
-            # If "Other" is in select categories
-            # elif 'Other' in select_categories:
-            #     es_score = scores[categories.index('Earth Science')]
-            #     if es_score > earth_science_tweak_threshold:
-            #         select_categories[select_categories.index('Other')] = 'Earth Science'
-            #         select_scores[select_categories.index('Earth Science')] = es_score
+    # Extra step to check for "Earth Science" articles miscategorized as "Other"
+    # This is expected to be less neccessary with improved training data
+    if config['ADDITIONAL_EARTH_SCIENCE_PROCESSING'] is True:
+        # If "Other" is the max category
+        # if max_category == 'Other':
+        #     es_score = scores[categories.index('Earth Science')]
+        #     if es_score > config['ADDITIONAL_EARTH_SCIENCE_PROCESSING_THRESHOLD']:
+        #         max_category = 'Earth Science'
+        #         max_score = es_score
+        # If "Other" is in select categories
+        # elif 'Other' in select_categories:
+        #     es_score = scores[categories.index('Earth Science')]
+        #     if es_score > earth_science_tweak_threshold:
+        #         select_categories[select_categories.index('Other')] = 'Earth Science'
+        #         select_scores[select_categories.index('Earth Science')] = es_score
 
-            if meet_threshold[categories.index('Other')] is True:
-                # If Earth Science score above additional threshold
-                if scores[categories.index('Earth Science')] \
-                        > config['ADDITIONAL_EARTH_SCIENCE_PROCESSING_THRESHOLD']:
-                    # import pdb;pdb.set_trace()
-                    meet_threshold[categories.index('Other')] = False
-                    meet_threshold[categories.index('Earth Science')] = True
+        if meet_threshold[categories.index('Other')] is True:
+            # If Earth Science score above additional threshold
+            if scores[categories.index('Earth Science')] \
+                    > config['ADDITIONAL_EARTH_SCIENCE_PROCESSING_THRESHOLD']:
+                # import pdb;pdb.set_trace()
+                meet_threshold[categories.index('Other')] = False
+                meet_threshold[categories.index('Earth Science')] = True
 
-        out_list.append({'bibcode': row['bibcode'],
-                         'max_category': max_category,
-                         'max_score': max_score,
-                         'select_categories': select_categories,
-                         'select_scores': select_scores})
+    out_list.append({'bibcode': row['bibcode'],
+                     'max_category': max_category,
+                     'max_score': max_score,
+                     'select_categories': select_categories,
+                     'select_scores': select_scores})
 
-        import pdb;pdb.set_trace()
+    import pdb;pdb.set_trace()
 
 
     # for record in records:
@@ -322,6 +318,11 @@ if __name__ == '__main__':
         # prepare_records(records_path)
         records = score_records(records_path)
 
+        for record in records:
+            print("Record: {}".format(record['bibcode']))
+            print("Text: {}".format(record['text']))
+            print("Categories: {}".format(record['categories']))
+            print("Scores: {}".format(record['scores']))
         records = classify_records_from_scores(records)
 
     print("Done")
