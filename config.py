@@ -22,10 +22,10 @@ CLASSIFICATION_INPUT_TEXT = "title abstract"
 # CLASSIFICATION_INPUT_TEXT = 'Abstract' # 'title', 'abstract' 'title abstract'
 # Classification Model
 PUBLISHED_MODEL = False
-CLASSIFICATION_PRETRAINED_MODEL = "adsabs/ASTROBERT"
+# CLASSIFICATION_PRETRAINED_MODEL = "adsabs/ASTROBERT"
 # CLASSIFICATION_PRETRAINED_MODEL_UNPUBLISHED = "/Users/thomasallen/Code/SciX_Classifier/models/checkpoint-32100"
 # CLASSIFICATION_PRETRAINED_MODEL_UNPUBLISHED = "/Users/thomasallen/Code/SciX_Classifier/models/checkpoint-32100"
-# CLASSIFICATION_PRETRAINED_MODEL = "/SciX_Classifier/tests/models/checkpoint-32100"
+CLASSIFICATION_PRETRAINED_MODEL = "SciX_Classifier/tests/models/checkpoint-32100/"
 CLASSIFICATION_PRETRAINED_MODEL_REVISION = "SciX-Categorizer"
 CLASSIFICATION_PRETRAINED_MODEL_TOKENIZER = "adsabs/ASTROBERT"
 CLASSIFICATION_INPUT_TEXT = "title abstract"

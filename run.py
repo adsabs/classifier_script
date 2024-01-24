@@ -81,7 +81,6 @@ def load_model_and_tokenizer(pretrained_model_name_or_path=None, revision=None, 
                                               do_lower_case=False)
 
     # load model
-    # import pdb;pdb.set_trace()
     model = AutoModelForSequenceClassification.from_pretrained(pretrained_model_name_or_path=pretrained_model_name_or_path,
                                     revision=revision,
                                     num_labels=len(labels),
