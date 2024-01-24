@@ -12,6 +12,7 @@
 # __license__ = 'MIT'
 
 import os
+import csv
 # import sys
 # import time
 # import json
@@ -27,7 +28,7 @@ from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
 # from adsputils import get_date
 # from adsmsg import OrcidClaims
-from SciX_Classifier import classifier#, tasks
+from SciX_Classifier import classifier, tasks
 # from ADSOrcid import updater, tasks
 # from ADSOrcid.models import ClaimsLog, KeyValue, Records, AuthorInfo
 
@@ -35,6 +36,7 @@ from SciX_Classifier import classifier#, tasks
 
 from adsputils import setup_logging, load_config
 proj_home = os.path.realpath(os.path.dirname(__file__))
+global config
 config = load_config(proj_home=proj_home)
 logger = setup_logging('run.py', proj_home=proj_home,
                         level=config.get('LOGGING_LEVEL', 'INFO'),
@@ -112,17 +114,17 @@ def prepare_records(records_path):
     """
     # Open .csv file and read in records
     # COnvert records to send to classifier
-    df = pd.read_csv(records_path)
+    # df = pd.read_csv(records_path)
 
     # Replace any NaNs with empty strings
-    df = df.fillna('')
+    # df = df.fillna('')
 
-    records = []
-    for i, row in df.iterrows():
-        record = {}
-        record['bibcode'] = row['bibcode']
-        record['text'] = row['title'] + ' ' + row['abstract']
-        records.append(record)
+    # records = []
+    # for i, row in df.iterrows():
+    #     record = {}
+    #     record['bibcode'] = row['bibcode']
+    #     record['text'] = row['title'] + ' ' + row['abstract']
+    #     records.append(record)
 
         # Is it at this point that a messesge should be sent to the 
         # classification queue? 
@@ -131,15 +133,31 @@ def prepare_records(records_path):
     
     # TODO
     # Maybe using pandas is not the best way to do this?? - Consider
-    # with open(records_path, 'r') as f: 
-        # records = f.readlines()
-        # records = f.read().splitlines()
+    # NOte: that this method requres the input file to have the following
+    # columns: bibcode, title, abstract
+    with open(records_path, 'r') as f: 
+        csv_reader = csv.reader(f)
+        headers = next(csv_reader)
+
+        for row in csv_reader:
+            record = {}
+            record['bibcode'] = row[0]
+            record['text'] = row[1] + ' ' + row[2]
+
+            print('testing message')
+            # import pdb;pdb.set_trace()
+            # Now send record to classification queue
+            # For Testing
+            tasks.task_send_input_record_to_classifier(record)
+            # For Production
+            # tasks.task_send_input_record_to_classifier.delay(record)
 
     # Convert records to list of dictionaries
     # records = [dict(zip(['bibcode', 'title', 'abstract'], r.split(','))) for r in records]
 
-    # import pdb;pdb.set_trace()
-    return records
+    print('Checking records')
+    import pdb;pdb.set_trace()
+    # return records
 
 def score_record(record):
     """
@@ -167,7 +185,7 @@ def score_record(record):
     model_dict = load_model_and_tokenizer()
 
     # load and prepare records
-    records = prepare_records(records_path)
+    # records = prepare_records(records_path)
 
 
     # Classify record
@@ -177,9 +195,9 @@ def score_record(record):
                                 model_dict['model'],model_dict['labels'],
                                 model_dict['id2label'],model_dict['label2id'])
 
-    # Append classification to record
-    # record['categories'] = tmp_categories
-    # record['scores'] = tmp_scores
+    # Because the classifier returns a list of lists so it can batch process
+    record['categories'] = record['categories'][0]
+    record['scores'] = record['scores'][0]
 
     # Append model information to record
     record['model'] = model_dict['model']
@@ -210,26 +228,17 @@ def classify_record_from_scores(record):
     # Fetch thresholds from config file
     thresholds = config['CLASSIFICATION_THRESHOLDS']
     print('Thresholds: {}'.format(thresholds))
-    import pdb;pdb.set_trace()
 
 
-    # Note these if statements are because the classifier returns a list of
-    # lists so it can batch process records. If only one record is sent, it
-    # returns a list of one list. This should be addressed
     scores = record['scores']
-    if len(scores) == 1:
-        scores = scores[0]
     categories = record['categories']
-    if len(categories) == 1:
-        categories = categories[0]
     # max_score_index = scores.index(max(scores))
     # max_category = categories[max_score_index]
     # max_score = scores[max_score_index]
 
-    import pdb;pdb.set_trace()
     meet_threshold = [score > threshold for score, threshold in zip(scores, thresholds)]
-    import pdb;pdb.set_trace()
 
+    import pdb;pdb.set_trace()
     # Extra step to check for "Earth Science" articles miscategorized as "Other"
     # This is expected to be less neccessary with improved training data
     if config['ADDITIONAL_EARTH_SCIENCE_PROCESSING'] is True:
@@ -316,8 +325,8 @@ if __name__ == '__main__':
     # import pdb;pdb.set_trace()
     if args.new_records:
         print("Processing new records")
-        # prepare_records(records_path)
-        records = score_records(records_path)
+        prepare_records(records_path)
+        # records = score_records(records_path)
 
         for record in records:
             print("Record: {}".format(record['bibcode']))

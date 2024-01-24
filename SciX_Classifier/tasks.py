@@ -1,3 +1,5 @@
+import sys
+import os
 # from __future__ import absolute_import, unicode_literals
 import adsputils
 from adsputils import ADSCelery
@@ -8,20 +10,22 @@ from adsputils import ADSCelery
 # from SciXClassifier.models import KeyValue
 # from kombu import Queue
 # import datetime
-# import os
+# from .classifier import score_record
+sys.path.append(os.path.abspath('../..'))
+from run import score_record, classify_record_from_scores
 
 # ============================= INITIALIZATION ==================================== #
 
 proj_home = os.path.realpath(os.path.join(os.path.dirname(__file__), "../"))
-app = app_module.SciXClassifierCelery(
-    "scixclassifier-pipeline",
-    proj_home=proj_home,
-    local_config=globals().get("local_config", {}),
-)
-app.conf.CELERY_QUEUES = (
-    Queue("unclassified-queue", app.exchange, routing_key="unclassified-queue"),
-)
-logger = app.logger
+# app = app_module.SciXClassifierCelery(
+#     "scixclassifier-pipeline",
+#     proj_home=proj_home,
+#     local_config=globals().get("local_config", {}),
+# )
+# app.conf.CELERY_QUEUES = (
+#     Queue("unclassified-queue", app.exchange, routing_key="unclassified-queue"),
+# )
+# logger = app.logger
 
 
 # ============================= TASKS ============================================= #
@@ -38,7 +42,7 @@ logger = app.logger
 #   - Finding records with given set of parameters (e.g. classification, model, etc.)
 
 
-@app.task(queue="unclassified-queue")
+# @app.task(queue="unclassified-queue")
 def task_send_input_record_to_classifier(message):
     """
     Send a new record to the classifier
@@ -52,6 +56,23 @@ def task_send_input_record_to_classifier(message):
         }
     :return: no return
     """
+
+    print("task_send_input_record_to_classifier")
+    print(message)
+
+    # import pdb; pdb.set_trace()
+    # First obtain the raw scores from the classifier model
+    message = score_record(message)
+
+    # Then classify the record based on the raw scores
+    import pdb; pdb.set_trace()
+    message = classify_record_from_scores(message)
+
+
+
+    import pdb; pdb.set_trace()
+
+
 def task_index_classified_record(message):
     """
     Update the database with the new classification
@@ -65,7 +86,11 @@ def task_index_classified_record(message):
         }
     :return: no return
     """
-@app.task(queue="output-results")
+
+    pass
+
+
+# @app.task(queue="output-results")
 def task_output_results(msg):
     """
     This worker will forward results to the outside
