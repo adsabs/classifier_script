@@ -269,7 +269,7 @@ if __name__ == '__main__':
         records_path = args.records
         print(records_path)
         # Open .csv file and read in records
-        # COnvert records to send to classifier
+        # Convert records to send to classifier
 
     # import pdb;pdb.set_trace()
     if args.validate:
