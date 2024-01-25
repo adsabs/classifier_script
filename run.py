@@ -254,6 +254,7 @@ def classify_record_from_scores(record):
         #         select_categories[select_categories.index('Other')] = 'Earth Science'
         #         select_scores[select_categories.index('Earth Science')] = es_score
 
+        import pdb;pdb.set_trace()
         if meet_threshold[categories.index('Other')] is True:
             # If Earth Science score above additional threshold
             if scores[categories.index('Earth Science')] \
@@ -315,7 +316,7 @@ if __name__ == '__main__':
         records_path = args.records
         print(records_path)
         # Open .csv file and read in records
-        # COnvert records to send to classifier
+        # Convert records to send to classifier
 
     # import pdb;pdb.set_trace()
     if args.validate:

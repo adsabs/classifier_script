@@ -5,7 +5,7 @@ aiohttp==3.8.5
 aiosignal==1.3.1
 amqp==2.6.1
 # Editable install with no version control (astrobert==0.0.1)
--e /Users/thomasallen/Code/SciX_Classifier/astroBERT
+#-e /Users/thomasallen/Code/SciX_Classifier/astroBERT
 async-timeout==4.0.3
 attrs==23.1.0
 billiard==3.6.4.0
@@ -39,7 +39,8 @@ mpmath==1.3.0
 multidict==6.0.4
 multiprocess==0.70.13
 networkx==3.1
-numpy==1.24.4
+#numpy==1.24.4
+numpy
 packaging==23.1
 pandas==1.5.3
 Pillow==10.0.1
@@ -55,7 +56,8 @@ regex==2023.8.8
 requests==2.27.1
 responses==0.18.0
 safetensors==0.3.3
-scikit-learn==1.3.0
+#scikit-learn==1.3.0
+#scikit-learn
 scipy==1.10.1
 seaborn==0.12.2
 simplejson==3.17.6
