@@ -99,9 +99,9 @@ def load_model_and_tokenizer(pretrained_model_name_or_path=None, revision=None, 
 
 def prepare_records(records_path):
     """
-    Takes a path to a .csv file of records and converts it into a list of
-    dictionaries with the following keys: bibcode and text (a combination of 
-    title and abstract). Returns the list of dictionaries.
+    Takes a path to a .csv file of records and converts each record into a
+    dictionary with the following keys: bibcode and text (a combination of 
+    title and abstract). Sends each record to the classification queue.
 
     Parameters
     ----------
@@ -109,30 +109,10 @@ def prepare_records(records_path):
 
     Returns
     -------
-    records : list of dictionaries with the following keys: bibcode and text
+    no return
     """
     # Open .csv file and read in records
-    # COnvert records to send to classifier
-    # df = pd.read_csv(records_path)
-
-    # Replace any NaNs with empty strings
-    # df = df.fillna('')
-
-    # records = []
-    # for i, row in df.iterrows():
-    #     record = {}
-    #     record['bibcode'] = row['bibcode']
-    #     record['text'] = row['title'] + ' ' + row['abstract']
-    #     records.append(record)
-
-        # Is it at this point that a messesge should be sent to the 
-        # classification queue? 
-        # tasks.task_send_input_record_to_classifier.delay(record)
-
-    
-    # TODO
-    # Maybe using pandas is not the best way to do this?? - Consider
-    # NOte: that this method requres the input file to have the following
+    # Note: that this method requres the input file to have the following
     # columns: bibcode, title, abstract
     with open(records_path, 'r') as f: 
         csv_reader = csv.reader(f)
@@ -144,32 +124,25 @@ def prepare_records(records_path):
             record['text'] = row[1] + ' ' + row[2]
 
             print('testing message')
-            # import pdb;pdb.set_trace()
             # Now send record to classification queue
             # For Testing
             tasks.task_send_input_record_to_classifier(record)
             # For Production
             # tasks.task_send_input_record_to_classifier.delay(record)
 
-    # Convert records to list of dictionaries
-    # records = [dict(zip(['bibcode', 'title', 'abstract'], r.split(','))) for r in records]
-
-    print('Checking records')
-    import pdb;pdb.set_trace()
-    # return records
 
 def score_record(record):
     """
     Provide classification scores for a record using the following
         categories:
-            1 - Astronomy
-            2 - HelioPhysics
-            3 - Planetary Science
-            4 - Earth Science
-            5 - Biological and Physical Sciences
-            6 - Other Physics
-            7 - Other
-            8 - Garbage
+            0 - Astronomy
+            1 - HelioPhysics
+            2 - Planetary Science
+            3 - Earth Science
+            4 - Biological and Physical Sciences
+            5 - Other Physics
+            6 - Other
+            7 - Garbage
 
     Parameters
     ----------
@@ -177,24 +150,20 @@ def score_record(record):
 
     Returns
     -------
-    records : list of dictionaries with the following keys: bibcode, text,
+    records : dictionary with the following keys: bibcode, text,
                 categories, scores, and model information
     """
     # Load model and tokenizer
     model_dict = load_model_and_tokenizer()
 
-    # load and prepare records
-    # records = prepare_records(records_path)
-
-
     # Classify record
-    # tmp_categories, tmp_scores = classifier.batch_assign_SciX_categories(
     record['categories'], record['scores'] = classifier.batch_assign_SciX_categories(
                                 [record['text']],model_dict['tokenizer'],
                                 model_dict['model'],model_dict['labels'],
                                 model_dict['id2label'],model_dict['label2id'])
 
     # Because the classifier returns a list of lists so it can batch process
+    # Take only the first element of each list
     record['categories'] = record['categories'][0]
     record['scores'] = record['scores'][0]
 
@@ -202,10 +171,10 @@ def score_record(record):
     record['model'] = model_dict['model']
 
 
-        # print("Record: {}".format(record['bibcode']))
-        # print("Text: {}".format(record['text']))
-        # print("Categories: {}".format(tmp_categories))
-        # print("Scores: {}".format(tmp_scores))
+    # print("Record: {}".format(record['bibcode']))
+    # print("Text: {}".format(record['text']))
+    # print("Categories: {}".format(record['categories']))
+    # print("Scores: {}".format(record['scores']))
 
     return record
 
@@ -226,7 +195,7 @@ def classify_record_from_scores(record):
 
     # Fetch thresholds from config file
     thresholds = config['CLASSIFICATION_THRESHOLDS']
-    print('Thresholds: {}'.format(thresholds))
+    # print('Thresholds: {}'.format(thresholds))
 
 
     scores = record['scores']
@@ -237,41 +206,26 @@ def classify_record_from_scores(record):
 
     meet_threshold = [score > threshold for score, threshold in zip(scores, thresholds)]
 
-    import pdb;pdb.set_trace()
     # Extra step to check for "Earth Science" articles miscategorized as "Other"
     # This is expected to be less neccessary with improved training data
     if config['ADDITIONAL_EARTH_SCIENCE_PROCESSING'] is True:
-        # If "Other" is the max category
-        # if max_category == 'Other':
-        #     es_score = scores[categories.index('Earth Science')]
-        #     if es_score > config['ADDITIONAL_EARTH_SCIENCE_PROCESSING_THRESHOLD']:
-        #         max_category = 'Earth Science'
-        #         max_score = es_score
-        # If "Other" is in select categories
-        # elif 'Other' in select_categories:
-        #     es_score = scores[categories.index('Earth Science')]
-        #     if es_score > earth_science_tweak_threshold:
-        #         select_categories[select_categories.index('Other')] = 'Earth Science'
-        #         select_scores[select_categories.index('Earth Science')] = es_score
-
+        # print('Additional Earth Science Processing')
+        # import pdb;pdb.set_trace()
         if meet_threshold[categories.index('Other')] is True:
             # If Earth Science score above additional threshold
+            # print('Working stop')
+            # import pdb;pdb.set_trace()
             if scores[categories.index('Earth Science')] \
                     > config['ADDITIONAL_EARTH_SCIENCE_PROCESSING_THRESHOLD']:
                 # import pdb;pdb.set_trace()
                 meet_threshold[categories.index('Other')] = False
                 meet_threshold[categories.index('Earth Science')] = True
 
-    out_list.append({'bibcode': row['bibcode'],
-                     'max_category': max_category,
-                     'max_score': max_score,
-                     'select_categories': select_categories,
-                     'select_scores': select_scores})
+    # Append collections to record
+    record['collections'] = [category for category, threshold in zip(categories, meet_threshold) if threshold is True]
 
-    import pdb;pdb.set_trace()
-
-
-    # for record in records:
+    # import pdb;pdb.set_trace()
+    return record
 
 
 def index_record():

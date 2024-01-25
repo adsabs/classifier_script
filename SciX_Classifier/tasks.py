@@ -68,9 +68,7 @@ def task_send_input_record_to_classifier(message):
     # import pdb; pdb.set_trace()
     message = classify_record_from_scores(message)
 
-
-
-    import pdb; pdb.set_trace()
+    # import pdb; pdb.set_trace()
 
 
 def task_index_classified_record(message):
