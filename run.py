@@ -213,18 +213,14 @@ def classify_record_from_scores(record):
         # import pdb;pdb.set_trace()
         if meet_threshold[categories.index('Other')] is True:
             # If Earth Science score above additional threshold
-            # print('Working stop')
-            # import pdb;pdb.set_trace()
             if scores[categories.index('Earth Science')] \
                     > config['ADDITIONAL_EARTH_SCIENCE_PROCESSING_THRESHOLD']:
-                # import pdb;pdb.set_trace()
                 meet_threshold[categories.index('Other')] = False
                 meet_threshold[categories.index('Earth Science')] = True
 
     # Append collections to record
     record['collections'] = [category for category, threshold in zip(categories, meet_threshold) if threshold is True]
 
-    # import pdb;pdb.set_trace()
     return record
 
 
