@@ -67,6 +67,7 @@ def task_send_input_record_to_classifier(message):
     # Then classify the record based on the raw scores
     # import pdb; pdb.set_trace()
     message = classify_record_from_scores(message)
+    print(message['collections'])
 
     # import pdb; pdb.set_trace()
 

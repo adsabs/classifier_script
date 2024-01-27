@@ -277,12 +277,12 @@ if __name__ == '__main__':
         prepare_records(records_path)
         # records = score_records(records_path)
 
-        for record in records:
-            print("Record: {}".format(record['bibcode']))
-            print("Text: {}".format(record['text']))
-            print("Categories: {}".format(record['categories']))
-            print("Scores: {}".format(record['scores']))
-        records = classify_records_from_scores(records)
+        # for record in records:
+            # print("Record: {}".format(record['bibcode']))
+            # print("Text: {}".format(record['text']))
+            # print("Categories: {}".format(record['categories']))
+            # print("Scores: {}".format(record['scores']))
+        # records = classify_records_from_scores(records)
 
     print("Done")
     import pdb;pdb.set_trace()
