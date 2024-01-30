@@ -67,7 +67,10 @@ def task_send_input_record_to_classifier(message):
     # Then classify the record based on the raw scores
     # import pdb; pdb.set_trace()
     message = classify_record_from_scores(message)
+    print('Collections: ')
     print(message['collections'])
+
+    task_index_classified_record(message)
 
     # import pdb; pdb.set_trace()
 
@@ -86,7 +89,9 @@ def task_index_classified_record(message):
     :return: no return
     """
 
-    pass
+    print('Indexing Classified Record')
+    import pdb; pdb.set_trace()
+    # pass
 
 
 # @app.task(queue="output-results")

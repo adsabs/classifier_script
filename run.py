@@ -220,6 +220,7 @@ def classify_record_from_scores(record):
 
     # Append collections to record
     record['collections'] = [category for category, threshold in zip(categories, meet_threshold) if threshold is True]
+    record['earth_science_adjustment'] = config['ADDITIONAL_EARTH_SCIENCE_PROCESSING']
 
     return record
 
