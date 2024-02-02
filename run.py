@@ -28,7 +28,7 @@ from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
 # from adsputils import get_date
 # from adsmsg import OrcidClaims
-from SciX_Classifier import classifier, tasks
+from ClassifierPipeline import classifier, tasks
 # from ADSOrcid import updater, tasks
 # from ADSOrcid.models import ClaimsLog, KeyValue, Records, AuthorInfo
 
