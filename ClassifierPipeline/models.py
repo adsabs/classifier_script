@@ -2,7 +2,7 @@
 
 from builtins import str
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, Integer, String, Text, TIMESTAMP
+from sqlalchemy import Column, Integer, String, Text, TIMESTAMP, ARRAY
 from sqlalchemy.types import Enum
 import json
 import sys

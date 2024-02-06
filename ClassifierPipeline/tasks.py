@@ -8,18 +8,21 @@ from adsputils import ADSCelery
 # from SciXClassifier import updater
 # from SciXClassifier.exceptions import ProcessingException, IgnorableException
 # from SciXClassifier.models import KeyValue
-from .app import SciXClassifierCelery
+# from .app import SciXClassifierCelery
+import ClassifierPipeline.app as app_module
 # from kombu import Queue
 # import datetime
 # from .classifier import score_record
 sys.path.append(os.path.abspath('../..'))
 from run import score_record, classify_record_from_scores
 
+from sqlalchemy.orm import scoped_session
+from sqlalchemy.orm import sessionmaker
 # ============================= INITIALIZATION ==================================== #
 
 proj_home = os.path.realpath(os.path.join(os.path.dirname(__file__), "../"))
-# app = app_module.SciXClassifierCelery(
-app = SciXClassifierCelery(
+app = app_module.SciXClassifierCelery(
+# app = SciXClassifierCelery(
     "scixclassifier-pipeline",
     proj_home=proj_home,
     local_config=globals().get("local_config", {}),
@@ -92,6 +95,7 @@ def task_index_classified_record(message):
     """
 
     print('Indexing Classified Record')
+    app.index_record(message)
     import pdb; pdb.set_trace()
     # pass
 

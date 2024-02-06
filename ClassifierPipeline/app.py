@@ -2,6 +2,9 @@
 
 # from builtins import str
 # from .models import ClaimsLog, Records, AuthorInfo, ChangeLog
+# from ClassiferPipeline.models import ScoreTable, OverrideTable, FinalCollectionTable
+import ClassifierPipeline.models as models
+# import ClassifierPipeline.app as app_module
 from adsputils import get_date, ADSCelery, u2asc
 # from ADSOrcid import names
 # from ADSOrcid.exceptions import IgnorableException
@@ -53,8 +56,27 @@ class SciXClassifierCelery(ADSCelery):
         :return: boolean - whether record successfuly added
                 to the database
         """
+        print('Indexing record in index_record')
+    # id = Column(Integer, primary_key=True)
+    # bibcode = Column(String(19), unique=True)
+    # scores = Column(Text)
+    # created = Column(UTCDateTime, default=get_date)
+
+        scores = {'scores': {cat:score for cat, score in zip(record['categories'], record['scores'])},
+                  'earth_science_adjustment': record['earth_science_adjustment'],
+                  'collections': record['collections']}
+        
+        score_table = models.ScoreTable(bibcode=record['bibcode'], 
+                                 scores=scores)
+
+        # import pdb; pdb.set_trace()
+
         # res = []
-        # with self.session_scope() as session:
+        with self.session_scope() as session:
+
+            session.add(score_table)
+            session.commit()
+            
             # for c in claims:
             #     if isinstance(c, ClaimsLog):
             #         claim = c
