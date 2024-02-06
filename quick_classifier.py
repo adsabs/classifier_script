@@ -32,6 +32,7 @@ from ClassifierPipeline import classifier, tasks
 # from ADSOrcid import updater, tasks
 # from ADSOrcid.models import ClaimsLog, KeyValue, Records, AuthorInfo
 from run import score_record, classify_record_from_scores, prepare_records
+from harvest_solr import harvest_solr
 
 # # ============================= INITIALIZATION ==================================== #
 
@@ -77,16 +78,28 @@ if __name__ == '__main__':
         # Open .csv file and read in records
         # Convert records to send to classifier
 
-    import pdb;pdb.set_trace()
     records = pd.read_csv(records_path)
 
+    # Start with just bibcodes
+    bibcodes = records['bibcode'].tolist()
+
+
+    # Harvest Title and Abstract from Solr
+    records = harvest_solr(bibcodes, start_index=0, fields='bibcode, title, abstract')
+
+    # import pdb;pdb.set_trace()
     # Prepare records for classification
     # Check if just bibcodes or full records
     # if just bibcodes then get records from solr
 
     # Loop through records and classify
-    for index, record in records.iterrows():
-        pass
+    for index, record in enumerate(records):
+        record = score_record(record)
+        record = classify_record_from_scores(record)
+        # Update records
+        records[index] = record
 
+
+    print('checkpoint')
     import pdb;pdb.set_trace()
     print("Done")

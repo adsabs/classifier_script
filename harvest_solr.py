@@ -4,11 +4,11 @@ import json
 
 import requests
 from adsputils import setup_logging, load_config
-from tqdm import tqdm
-import ptree
+# from tqdm import tqdm
+# import ptree
 
 #from ..utilities import remove_control_chars
-import remove_control_chars as rcc
+# import remove_control_chars as rcc
 
 # load API config
 #solr_config = load_config(proj_home=os.path.realpath(os.path.join(os.path.dirname(__file__), '../../')))
@@ -47,6 +47,8 @@ def harvest_solr(bibcodes_list, start_index=0, fields='bibcode, title, abstract'
     logger.info('Start of harvest')
     #start progress bar
     # pbar = tqdm(total=len(bibcodes_list), initial=start_index)
+    # print('checkpoint harvest_solr.py')
+    # import pdb;pdb.set_trace()
 
     # loop through list of bibcodes and query solr
     while idx<len(bibcodes_list):
@@ -67,7 +69,7 @@ def harvest_solr(bibcodes_list, start_index=0, fields='bibcode, title, abstract'
         while (not successful_req) and (attempts<10):
             r_json = None
             r = requests.post(solr_config['API_URL']+'/search/bigquery',
-                    params={'q':'*:*', 'wt':'json', 'fq':'{!bitset}', 'fl':'bibcode, abstract', 'rows':len(input_bibcodes)},
+                    params={'q':'*:*', 'wt':'json', 'fq':'{!bitset}', 'fl':fields, 'rows':len(input_bibcodes)},
                               headers={'Authorization': 'Bearer ' + solr_config['API_TOKEN'], "Content-Type": "big-query/csv"},
                               data=bibcodes)
 
@@ -107,35 +109,8 @@ def harvest_solr(bibcodes_list, start_index=0, fields='bibcode, title, abstract'
         print()
         print('index')
         print(idx)
+        # import pdb;pdb.set_trace()
 
-        if r_json:
-            # abstract for each bibcode
-            # then save to a file 
-            base_path = 'data/abstracts'
-            list_file = base_path + '/abstract_list.txt'
-            for index, ele in enumerate(r_json['response']['docs']):
-                print()
-                print()
-                print(ele)
-                print(ele['bibcode'])
-
-                if 'abstract' in ele:
-                    print()
-                    print(ele['abstract'])
-                    # abs = ele['abstract']
-                    out_path_abs = os.path.join(base_path, ptree.id2ptree(ele['bibcode']))
-                    out_path = 'data/abstracts' + out_path_abs
-
-                    if not os.path.exists(out_path):
-                        os.makedirs(out_path)
-                    # import pdb;pdb.set_trace()
-                    with open(out_path + 'abstract.txt', 'w') as f:
-                        f.write(ele['abstract'])
-
-                    with open(list_file, 'a') as f:
-                        f.write(out_path_abs+'\n')
-
-                    print(out_path)
         
         end_time = time.perf_counter()
         total_time = end_time - start_time
@@ -153,7 +128,8 @@ def harvest_solr(bibcodes_list, start_index=0, fields='bibcode, title, abstract'
         # import pdb;pdb.set_trace()
 
         # pause to not go over API rate limit
-        time.sleep(45)
+        if len(bibcodes_list)>step_size:
+            time.sleep(45)
 
         # ALWAYS DO:
         # increment counter for next batch
@@ -163,3 +139,24 @@ def harvest_solr(bibcodes_list, start_index=0, fields='bibcode, title, abstract'
         #update log
         logger.info(to_log)
 
+    # print('checkpoint harvest_solr.py')
+    # import pdb;pdb.set_trace()
+
+    return transform_r_json(r_json)
+
+
+def transform_r_json(r_json):
+    """
+    Extract the needed information from the json response from the solr query.
+    """
+
+    # extract the needed information
+    bibcodes = [doc['bibcode'] for doc in r_json['response']['docs']]
+    titles = [doc['title'][0] for doc in r_json['response']['docs']] # without [0] it returns a list
+    abstracts = [doc['abstract'] for doc in r_json['response']['docs']]
+
+    # list of dictionaries with the bibcode, title, and abstract for each record
+    record_list = [{'bibcode': bibcodes[i], 'text': f'{titles[i]} {abstracts[i]}'} for i in range(len(bibcodes))]
+
+    # return bibcodes, titles, abstracts
+    return record_list
