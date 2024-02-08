@@ -65,13 +65,20 @@ if __name__ == '__main__':
                         help='Path to comma delimited list of new records' +
                              'to process: columns: bibcode, title, abstract')
 
+    parser.add_argument('-s',
+                        '--sort',
+                        dest='sort',
+                        action='store_true',
+                        help='Sorts return list in ascending order according to' +
+                             'the minimum collection score. Default is False.')
 
     args = parser.parse_args()
 
 
     if args.records:
         records_path = args.records
-        print(records_path)
+        out_path = records_path.replace('.csv', '_classified.csv')
+        print(f'Reading in {records_path} and writing to {out_path}')
     else:
         print("Please provide a path to a .csv file with records to process.")
         exit()
@@ -96,10 +103,30 @@ if __name__ == '__main__':
     for index, record in enumerate(records):
         record = score_record(record)
         record = classify_record_from_scores(record)
+
+        # Get scores for elements in collections
+        collection_scores = []
+        for collection in record['collections']:
+
+                # meet_threshold[categories.index('Earth Science')] = True
+            collection_scores.append(record['scores'][record['categories'].index(collection)]) 
+
         # Update records
+        record['collection_scores'] = collection_scores
+        record['minimum_collection_score'] = min(collection_scores)
         records[index] = record
 
+        
+    # Convert records to a dataframe
+    records = pd.DataFrame(records)
 
-    print('checkpoint')
-    import pdb;pdb.set_trace()
+    # Sort if needed
+    if args.sort is True:
+        records = records.sort_values(by=['minimum_collection_score'], ascending=True)
+
+    records.to_csv(out_path, index=False)
+
+
+
     print("Done")
+    print(f"Results save to {out_path}")
