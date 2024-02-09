@@ -69,7 +69,7 @@ class SciXClassifierCelery(ADSCelery):
         score_table = models.ScoreTable(bibcode=record['bibcode'], 
                                  scores=scores)
 
-        # import pdb; pdb.set_trace()
+        import pdb; pdb.set_trace()
 
         # res = []
         with self.session_scope() as session:
