@@ -1,3 +1,5 @@
+SQLALCHEMY_URL = 'sqlite:///'
+SQLALCHEMY_ECHO = False
 WORKING_DIR = '~/Code/ClassifierPipeline'
 API_URL = "https://api.adsabs.harvard.edu/v1" # ADS API URL
 API_TOKEN = ''
