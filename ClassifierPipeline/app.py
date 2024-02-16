@@ -9,10 +9,10 @@ from adsputils import get_date, ADSCelery, u2asc
 # from ADSOrcid import names
 # from ADSOrcid.exceptions import IgnorableException
 # from celery import Celery
-# from contextlib import contextmanager
+from contextlib import contextmanager
 # from dateutil.tz import tzutc
 # from sqlalchemy import and_
-# from sqlalchemy import create_engine
+from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session
 from sqlalchemy.orm import sessionmaker
 # import cachetools
@@ -74,6 +74,7 @@ class SciXClassifierCelery(ADSCelery):
         # res = []
         with self.session_scope() as session:
 
+            # import pdb; pdb.set_trace()
             session.add(score_table)
             session.commit()
             

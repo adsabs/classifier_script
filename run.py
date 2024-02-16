@@ -36,7 +36,7 @@ from ClassifierPipeline import classifier, tasks
 
 from adsputils import setup_logging, load_config
 proj_home = os.path.realpath(os.path.dirname(__file__))
-global config
+# global config
 config = load_config(proj_home=proj_home)
 logger = setup_logging('run.py', proj_home=proj_home,
                         level=config.get('LOGGING_LEVEL', 'INFO'),

@@ -22,11 +22,17 @@ from sqlalchemy.orm import sessionmaker
 
 proj_home = os.path.realpath(os.path.join(os.path.dirname(__file__), "../"))
 app = app_module.SciXClassifierCelery(
-# app = SciXClassifierCelery(
+        # app = SciXClassifierCelery(
     "scixclassifier-pipeline",
     proj_home=proj_home,
     local_config=globals().get("local_config", {}),
 )
+# from adsputils import setup_logging, load_config
+# config = load_config(proj_home=proj_home)
+# logger = setup_logging('run.py', proj_home=proj_home,
+#                         level=config.get('LOGGING_LEVEL', 'INFO'),
+#                         attach_stdout=config.get('LOG_STDOUT', False))
+
 # app.conf.CELERY_QUEUES = (
 #     Queue("unclassified-queue", app.exchange, routing_key="unclassified-queue"),
 # )
