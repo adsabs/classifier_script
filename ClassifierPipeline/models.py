@@ -2,7 +2,7 @@
 
 from builtins import str
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, Integer, String, Text, TIMESTAMP, ARRAY
+from sqlalchemy import Column, Integer, String, Text, TIMESTAMP, ARRAY, ForeignKey
 from sqlalchemy.types import Enum
 import json
 import sys
@@ -21,16 +21,14 @@ class ScoreTable(Base):
 class OverrideTable(Base):
     __tablename__ = 'overrides'
     id = Column(Integer, primary_key=True)
-    score_id = Column(Integer, foreign_key='scores.id')
-    # score_id = Column(Integer, foreign_key='ScoreTable.id')
+    score_id = Column(Integer, ForeignKey('scores.id'))
     override = Column(ARRAY(String))
     created = Column(UTCDateTime, default=get_date)
 
 class FinalCollectionTable(Base):
     __tablename__ = 'final_collection'
     id = Column(Integer, primary_key=True)
-    score_id = Column(Integer, foreign_key='scores.id')
-    # score_id = Column(Integer, foreign_key='ScoreTable.id')
+    score_id = Column(Integer, ForeignKey('scores.id'))
     collection = Column(ARRAY(String))
     created = Column(UTCDateTime, default=get_date)
 

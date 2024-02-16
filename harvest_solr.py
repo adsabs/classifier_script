@@ -156,7 +156,10 @@ def transform_r_json(r_json):
     abstracts = [doc['abstract'] for doc in r_json['response']['docs']]
 
     # list of dictionaries with the bibcode, title, and abstract for each record
-    record_list = [{'bibcode': bibcodes[i], 'text': f'{titles[i]} {abstracts[i]}'} for i in range(len(bibcodes))]
+    record_list = [{'bibcode': bibcodes[i],
+                    'title' : titles[i],
+                    'abstract' : abstracts[i],
+                    'text': f'{titles[i]} {abstracts[i]}'} for i in range(len(bibcodes))]
 
     # return bibcodes, titles, abstracts
     return record_list
