@@ -14,14 +14,22 @@ Base = declarative_base()
 class ScoreTable(Base):
     __tablename__ = 'scores'
     id = Column(Integer, primary_key=True)
-    bibcode = Column(String(19), unique=True)
+    bibcode = Column(String(19))
     scores = Column(Text)
+    created = Column(UTCDateTime, default=get_date)
+    override_id = Column(Integer, ForeignKey('overrides.id'))
+
+class ModelTable(Base):
+    __tablename__ = 'models'
+    id = Column(Integer, primary_key=True)
+    model = Column(Text)
+    postprocessing = Column(Text)
     created = Column(UTCDateTime, default=get_date)
 
 class OverrideTable(Base):
     __tablename__ = 'overrides'
     id = Column(Integer, primary_key=True)
-    score_id = Column(Integer, ForeignKey('scores.id'))
+    # score_id = Column(Integer, ForeignKey('scores.id'))
     override = Column(ARRAY(String))
     created = Column(UTCDateTime, default=get_date)
 

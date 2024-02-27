@@ -27,6 +27,7 @@ app = app_module.SciXClassifierCelery(
     proj_home=proj_home,
     local_config=globals().get("local_config", {}),
 )
+# import pdb; pdb.set_trace()
 # from adsputils import setup_logging, load_config
 # config = load_config(proj_home=proj_home)
 # logger = setup_logging('run.py', proj_home=proj_home,

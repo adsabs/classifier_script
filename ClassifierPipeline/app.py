@@ -1,4 +1,4 @@
-
+import json
 
 # from builtins import str
 # from .models import ClaimsLog, Records, AuthorInfo, ChangeLog
@@ -17,7 +17,6 @@ from sqlalchemy.orm import scoped_session
 from sqlalchemy.orm import sessionmaker
 # import cachetools
 # import datetime
-# import json
 # import os
 # import random
 # import time
@@ -45,8 +44,8 @@ def clear_caches():
 class SciXClassifierCelery(ADSCelery):
 
 
-    def __init__(self, *args, **kwargs):
-        pass
+    # def __init__(self, *args, **kwargs):
+    #     pass
 
     def index_record(self, record):
         """
@@ -62,12 +61,14 @@ class SciXClassifierCelery(ADSCelery):
     # scores = Column(Text)
     # created = Column(UTCDateTime, default=get_date)
 
+        # Scores Table
+
         scores = {'scores': {cat:score for cat, score in zip(record['categories'], record['scores'])},
                   'earth_science_adjustment': record['earth_science_adjustment'],
                   'collections': record['collections']}
         
         score_table = models.ScoreTable(bibcode=record['bibcode'], 
-                                 scores=scores)
+                                 scores=json.dumps(scores))
 
         import pdb; pdb.set_trace()
 

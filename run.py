@@ -168,7 +168,8 @@ def score_record(record):
     record['scores'] = record['scores'][0]
 
     # Append model information to record
-    record['model'] = model_dict['model']
+    # record['model'] = model_dict['model']
+    record['model'] = model_dict
 
 
     # print("Record: {}".format(record['bibcode']))
@@ -234,6 +235,8 @@ def index_record():
 
 # =============================== MAIN ======================================= #
 
+# To test the classifier
+# python run.py -n -r ClassifierPipeline/tests/stub_data/stub_new_records.csv
 
 if __name__ == '__main__':
 
