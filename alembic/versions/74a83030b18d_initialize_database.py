@@ -66,9 +66,11 @@ def upgrade() -> None:
                     )
 
 def downgrade() -> None:
-    op.drop_constraint('fk_score_id_overrides', 'overrides', type_='foreignkey')
+    op.drop_constraint('fk_overrides_id_scores', 'scores', type_='foreignkey')
+    op.drop_constraint('fk_models_id_scores', 'scores', type_='foreignkey')
     op.drop_constraint('fk_score_id_final_collection', 'final_collection', type_='foreignkey')
     op.drop_table('scores')
     op.drop_table('overrides')
     op.drop_table('final_collection')
+    op.drop_table('models')
 
