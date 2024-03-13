@@ -151,9 +151,17 @@ def transform_r_json(r_json):
     """
 
     # extract the needed information
+    # Bibcoded and titles are always present
     bibcodes = [doc['bibcode'] for doc in r_json['response']['docs']]
     titles = [doc['title'][0] for doc in r_json['response']['docs']] # without [0] it returns a list
-    abstracts = [doc['abstract'] for doc in r_json['response']['docs']]
+    # abstracts = [doc['abstract'] for doc in r_json['response']['docs']]
+    # Abstracts are not always present
+    abstracts = []
+    for doc in r_json['response']['docs']:
+        if 'abstract' in doc:
+            abstracts.append(doc['abstract'][0])
+        else:
+            abstracts.append('')
 
     # list of dictionaries with the bibcode, title, and abstract for each record
     record_list = [{'bibcode': bibcodes[i],
