@@ -159,7 +159,7 @@ def transform_r_json(r_json):
     abstracts = []
     for doc in r_json['response']['docs']:
         if 'abstract' in doc:
-            abstracts.append(doc['abstract'][0])
+            abstracts.append(doc['abstract'])
         else:
             abstracts.append('')
 
