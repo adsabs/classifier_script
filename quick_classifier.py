@@ -90,7 +90,6 @@ if __name__ == '__main__':
     # Start with just bibcodes
     bibcodes = records['bibcode'].tolist()
 
-
     # Harvest Title and Abstract from Solr
     records = harvest_solr(bibcodes, start_index=0, fields='bibcode, title, abstract')
 
@@ -114,6 +113,11 @@ if __name__ == '__main__':
         # Update records
         record['collection_scores'] = collection_scores
         record['minimum_collection_score'] = min(collection_scores)
+        # Remove "model" and "text keys from record
+        del record['model']
+        del record['text']
+
+        # Overwrite record with updated record
         records[index] = record
 
         
