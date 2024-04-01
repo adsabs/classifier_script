@@ -85,6 +85,7 @@ if __name__ == '__main__':
         # Open .csv file and read in records
         # Convert records to send to classifier
 
+    # Switch fram pandas
     records = pd.read_csv(records_path)
 
     # Start with just bibcodes
