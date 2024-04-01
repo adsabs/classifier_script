@@ -23,7 +23,7 @@ import argparse
 # from urllib3 import exceptions
 # warnings.simplefilter('ignore', exceptions.InsecurePlatformWarning)
 
-import pandas as pd
+# import pandas as pd
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
 # from adsputils import get_date
@@ -52,6 +52,8 @@ logger = setup_logging('run.py', proj_home=proj_home,
 
 # =============================== MAIN ======================================= #
 
+# python3 quick_classifier.py -r /proj/ads_abstracts/adsnlp/stub_bibcodes.csv
+# python3 quick_classifier.py -r /proj/ads_abstracts/adsnlp/2023Sci.csv
 
 if __name__ == '__main__':
 
@@ -85,11 +87,15 @@ if __name__ == '__main__':
         # Open .csv file and read in records
         # Convert records to send to classifier
 
-    # Switch fram pandas
-    records = pd.read_csv(records_path)
+    # records = pd.read_csv(records_path)
+    with open(records_path, 'r') as f:
+        bibcodes = f.read().splitlines()
 
     # Start with just bibcodes
-    bibcodes = records['bibcode'].tolist()
+    # bibcodes = records['bibcode'].tolist()
+    # If first line is 'bibcode' remove it
+    if bibcodes[0]=='bibcode':
+        bibcodes = bibcodes[1:]
 
     # Harvest Title and Abstract from Solr
     records = harvest_solr(bibcodes, start_index=0, fields='bibcode, title, abstract')
@@ -99,6 +105,15 @@ if __name__ == '__main__':
     # Check if just bibcodes or full records
     # if just bibcodes then get records from solr
 
+    # Initialize output 
+    output_list = []
+    output_batch = 500
+    
+    with open(out_path, 'w') as f:
+        f.write('bibcode,title,abstract,text,categories,scores,model,collections,earth_science_adjustment,collection_scores,minimum_collection_score')
+    
+
+    import pdb;pdb.set_trace()
     # Loop through records and classify
     for index, record in enumerate(records):
         record = score_record(record)
