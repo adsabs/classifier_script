@@ -98,13 +98,14 @@ if __name__ == '__main__':
         bibcodes = bibcodes[1:]
 
     # Harvest Title and Abstract from Solr
-    records = harvest_solr(bibcodes, start_index=0, fields='bibcode, title, abstract')
+    # records = harvest_solr(bibcodes, start_index=0, fields='bibcode, title, abstract')
 
     # import pdb;pdb.set_trace()
     # Prepare records for classification
     # Check if just bibcodes or full records
     # if just bibcodes then get records from solr
 
+    import pdb;pdb.set_trace()
     # Initialize output 
     output_list = []
     output_batch = 500
@@ -113,9 +114,12 @@ if __name__ == '__main__':
         f.write('bibcode,title,abstract,text,categories,scores,model,collections,earth_science_adjustment,collection_scores,minimum_collection_score')
     
 
-    import pdb;pdb.set_trace()
+    # import pdb;pdb.set_trace()
     # Loop through records and classify
-    for index, record in enumerate(records):
+    # for index, record in enumerate(records):
+    for index, bibcode in enumerate(bibcodes):
+        record = harvest_solr([bibcode], fields='bibcode, title, abstract')
+        import pdb;pdb.set_trace()
         record = score_record(record)
         record = classify_record_from_scores(record)
 
