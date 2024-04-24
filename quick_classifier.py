@@ -33,9 +33,9 @@ logger = setup_logging('run.py', proj_home=proj_home,
 
 # =============================== FUNCTIONS ======================================= #
 
-def write_batch_to_csv(batch, header, filename, mode='w', include_header=True):
+def write_batch_to_tsv(batch, header, filename, mode='w', include_header=True):
     with open(filename, mode, newline='') as file:
-        writer = csv.writer(file)
+        writer = csv.writer(file, delimiter='\t')
         if include_header:
             writer.writerow(header)
         writer.writerows(batch)
@@ -59,7 +59,7 @@ if __name__ == '__main__':
 
     if args.records:
         records_path = args.records
-        out_path = records_path.replace('.csv', '_classified.csv')
+        out_path = records_path.replace('.csv', '_classified.tsv')
         print(f'Reading in {records_path} may take a minute for large input files.')
         print(f'Will write output to {out_path}.')
     else:
@@ -114,7 +114,7 @@ if __name__ == '__main__':
         else:
             include_header = False
             mode = 'a'
-        write_batch_to_csv(output_list, header.split(','), out_path, mode=mode, include_header=include_header)
+        write_batch_to_tsv(output_list, header.split(','), out_path, mode=mode, include_header=include_header)
         output_list = []
         print(f"Processed {output_idx+index+1} records")
 
