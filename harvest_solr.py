@@ -105,20 +105,11 @@ def transform_r_json(r_json):
     Extract the needed information from the json response from the solr query.
     """
 
-    # Bibcoded and titles are always present
-    bibcodes = [doc['bibcode'] for doc in r_json['response']['docs']]
-    titles = [doc['title'][0] for doc in r_json['response']['docs']] # without [0] it returns a list
-    # Abstracts are not always present
-    abstracts = []
+    record_list = []
     for doc in r_json['response']['docs']:
-        if 'abstract' in doc:
-            abstracts.append(doc['abstract'])
-        else:
-            abstracts.append('')
-
-    record_list = [{'bibcode': bibcodes[i],
-                    'title' : titles[i],
-                    'abstract' : abstracts[i],
-                    'text': f'{titles[i]} {abstracts[i]}'} for i in range(len(bibcodes))]
+        if ('title' in doc) or ('abstract' in doc):
+            doc['text'] = f"{doc['title']} {doc['abstract']}"
+            record_list.append(doc)
+        
 
     return record_list

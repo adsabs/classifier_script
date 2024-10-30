@@ -13,6 +13,8 @@
 import os
 import csv
 import argparse
+import sys
+# sys.path.append("/Users/thomasallen/Code/ADS/classifier_script/venv/lib/python3.11/site-packages")
 
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
@@ -85,6 +87,8 @@ if __name__ == '__main__':
         # Harvest Title and Abstract from Solr
         bibcode_batch = bibcodes[output_idx:output_idx+output_batch]
         records = harvest_solr(bibcode_batch, start_index=0, fields='bibcode, title, abstract')
+        if len(records) == 0:
+            sys.exit('No records returned from harvesting Solr - exiting')
 
         for index, record in enumerate(records):
             record = score_record(record)
