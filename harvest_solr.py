@@ -107,7 +107,16 @@ def transform_r_json(r_json):
 
     record_list = []
     for doc in r_json['response']['docs']:
-        if ('title' in doc) or ('abstract' in doc):
+        if 'title' in doc:
+            title = doc['title']
+        else:
+            doc['title'] = None
+        if 'abstract'in doc:
+            abstract = doc['abstract']
+        else:
+            doc['abstract'] = None
+
+        if (doc['title'] is not None) or (doc['abstract'] is not None):
             doc['text'] = f"{doc['title']} {doc['abstract']}"
             record_list.append(doc)
         

@@ -108,6 +108,9 @@ if __name__ == '__main__':
 
             records[index] = record
 
+            if isinstance(record['title'], list):
+                record['title'] = str(record['title'][0])
+
             record_output = [record['bibcode'],record['title'],record['abstract'],', '.join(record['categories']),', '.join(map(str, record['scores'])),', '.join(record['collections']),', '.join(map(str, record['collection_scores'])),str(record['earth_science_adjustment'])]
 
             output_list.append(record_output)
