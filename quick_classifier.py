@@ -94,16 +94,20 @@ if __name__ == '__main__':
             record = score_record(record)
             record = classify_record_from_scores(record)
             del record['model']
-            del record['text']
 
             collection_scores = []
             for collection in record['collections']:
 
                 collection_scores.append(record['scores'][record['categories'].index(collection)]) 
 
-            collection_scores, record['collections'] = zip(*sorted(zip(collection_scores, record['collections']), reverse=True))
+            
+            # Sort assigned collections by score
+            try:
+                collection_scores, record['collections'] = zip(*sorted(zip(collection_scores, record['collections']), reverse=True))
+                collection_scores = [round(score, 2) for score in collection_scores]
+            except:
+                print(f'Record: {record["bibcode"]} was not assigned a collection')
 
-            collection_scores = [round(score, 2) for score in collection_scores]
             record['collection_scores'] = collection_scores
 
             records[index] = record
