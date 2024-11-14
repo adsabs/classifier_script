@@ -91,8 +91,6 @@ if __name__ == '__main__':
             sys.exit('No records returned from harvesting Solr - exiting')
 
         for index, record in enumerate(records):
-            print('')
-            print(record['bibcode'])
             record = score_record(record)
             record = classify_record_from_scores(record)
             del record['model']
