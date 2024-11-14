@@ -156,9 +156,11 @@ def score_record(record):
     # Load model and tokenizer
     model_dict = load_model_and_tokenizer()
 
+    text = f"{record['title']} {record['abstract']}"
+
     # Classify record
     record['categories'], record['scores'] = classifier.batch_assign_SciX_categories(
-                                [record['text']],model_dict['tokenizer'],
+                                [text],model_dict['tokenizer'],
                                 model_dict['model'],model_dict['labels'],
                                 model_dict['id2label'],model_dict['label2id'])
 

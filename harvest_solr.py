@@ -45,6 +45,10 @@ def harvest_solr(bibcodes_list, start_index=0, fields='bibcode, title, abstract'
         input_bibcodes = bibcodes_list[idx:idx+step_size]
         bibcodes = 'bibcode\n' + '\n'.join(input_bibcodes)
 
+        print('')
+        print('Input bibcodes:')
+        print(bibcodes)
+
         # start attempts
         while (not successful_req) and (attempts<total_attempts):
             r_json = None
@@ -96,9 +100,7 @@ def harvest_solr(bibcodes_list, start_index=0, fields='bibcode, title, abstract'
         idx+=step_size
         logger.info(to_log)
 
-
     return transform_r_json(r_json)
-
 
 def transform_r_json(r_json):
     """
@@ -107,18 +109,12 @@ def transform_r_json(r_json):
 
     record_list = []
     for doc in r_json['response']['docs']:
-        if 'title' in doc:
-            title = doc['title']
-        else:
+        if 'title' not in doc:
             doc['title'] = None
-        if 'abstract'in doc:
-            abstract = doc['abstract']
-        else:
+        if 'abstract' not in doc:
             doc['abstract'] = None
 
-        if (doc['title'] is not None) or (doc['abstract'] is not None):
-            doc['text'] = f"{doc['title']} {doc['abstract']}"
-            record_list.append(doc)
+        record_list.append(doc)
         
 
     return record_list
